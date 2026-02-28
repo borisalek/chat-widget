@@ -9,6 +9,23 @@
             --chat--color-font: var(--n8n-chat-font-color, #333333);
             font-family: 'Geist Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
         }
+.n8n-chat-widget .quick-questions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 20px 0 20px;
+}
+
+.n8n-chat-widget .quick-btn {
+    background: rgba(133, 79, 255, 0.1);
+    border: 1px solid rgba(133, 79, 255, 0.3);
+    border-radius: 8px;
+    padding: 10px;
+    cursor: pointer;
+    font-size: 13px;
+    text-align: left;
+    color: var(--chat--color-font);
+}
 
         .n8n-chat-widget .chat-container {
             position: fixed;
@@ -362,6 +379,11 @@
                 <button class="close-button">×</button>
             </div>
             <div class="chat-messages"></div>
+	<div class="quick-questions">
+    <button class="quick-btn">What services do you offer?</button>
+    <button class="quick-btn">How much does automation cost?</button>
+    <button class="quick-btn">Can you build custom AI agents?</button>
+</div>
             <div class="chat-input">
                 <textarea placeholder="Type your message here..." rows="1"></textarea>
                 <button type="submit">Send</button>
@@ -390,6 +412,13 @@
     const messagesContainer = chatContainer.querySelector('.chat-messages');
     const textarea = chatContainer.querySelector('textarea');
     const sendButton = chatContainer.querySelector('button[type="submit"]');
+const quickButtons = chatContainer.querySelectorAll('.quick-btn');
+
+quickButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+        sendMessage(btn.textContent);
+    });
+});
 
     function generateUUID() {
         return crypto.randomUUID();
