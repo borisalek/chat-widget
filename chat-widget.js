@@ -189,18 +189,27 @@ function startConversation(){
     quick.className = 'quick-questions';
 
     const questions = [
-        "What services do you offer?",
-        "How much does automation cost?",
-        "Can you build custom AI agents?"
+        {
+            text: "What services do you offer?",
+            reply: "We offer automation, AI agent development, and no-code solutions tailored to your business needs."
+        },
+        {
+            text: "How much does automation cost?",
+            reply: "Our automation packages start from $500. The final price depends on the complexity of your workflow."
+        },
+        {
+            text: "Can you build custom AI agents?",
+            reply: "Yes! We specialize in building custom AI agents using tools like n8n, Make, and OpenAI. Let's discuss your use case."
+        }
     ];
 
     questions.forEach(q => {
         const btn = document.createElement('button');
         btn.className = 'quick-btn';
-        btn.textContent = q;
+        btn.textContent = q.text;
         btn.onclick = () => {
             quick.remove();
-            sendMessage(q);
+            sendMessage(q.text, q.reply);
         };
         quick.appendChild(btn);
     });
@@ -208,7 +217,7 @@ function startConversation(){
     messages.appendChild(quick);
 }
 
-function sendMessage(text){
+function sendMessage(text, botReply){
     const user = document.createElement('div');
     user.className = 'chat-message user';
     user.textContent = text;
@@ -216,8 +225,10 @@ function sendMessage(text){
 
     const bot = document.createElement('div');
     bot.className = 'chat-message bot';
-    bot.textContent = "Demo reply from bot.";
+    bot.textContent = botReply || "Thanks for your message! We'll get back to you shortly.";
     messages.appendChild(bot);
+
+    messages.scrollTop = messages.scrollHeight;
 }
 
 newChatBtn.onclick = startConversation;
