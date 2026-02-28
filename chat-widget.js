@@ -219,35 +219,42 @@
         currentSessionId=uuid();
         chatContainer.querySelector('.new-conversation').style.display='none';
         chatInterface.classList.add('active');
+messages.innerHTML = "";
 
-        const bot=document.createElement('div');
-        bot.className='chat-message bot';
-        bot.textContent="Hi, how can I help you today?";
-        messages.appendChild(bot);
+        async function startConversation(){
+    currentSessionId = uuid();
+    chatContainer.querySelector('.new-conversation').style.display='none';
+    chatInterface.classList.add('active');
+    messages.innerHTML = "";
 
-        const quick=document.createElement('div');
-        quick.className='quick-questions';
+    const bot=document.createElement('div');
+    bot.className='chat-message bot';
+    bot.textContent="Hi, how can I help you today?";
+    messages.appendChild(bot);
 
-        const questions=[
-            "What services do you offer?",
-            "How much does automation cost?",
-            "Can you build custom AI agents?"
-        ];
+    const quick=document.createElement('div');
+    quick.className='quick-questions';
 
-        questions.forEach(q=>{
-            const btn=document.createElement('button');
-            btn.className='quick-btn';
-            btn.textContent=q;
-            btn.onclick=()=>{
-                quick.remove();
-                sendMessage(q);
-            };
-            quick.appendChild(btn);
-        });
+    const questions=[
+        "What services do you offer?",
+        "How much does automation cost?",
+        "Can you build custom AI agents?"
+    ];
 
-        messages.appendChild(quick);
-    }
+    questions.forEach(q=>{
+        const btn=document.createElement('button');
+        btn.className='quick-btn';
+        btn.textContent=q;
+        btn.onclick=()=>{
+            quick.remove();
+            sendMessage(q);
+        };
+        quick.appendChild(btn);
+    });
 
+    messages.appendChild(quick);
+    messages.scrollTop = messages.scrollHeight;
+}
     async function sendMessage(text){
         const user=document.createElement('div');
         user.className='chat-message user';
