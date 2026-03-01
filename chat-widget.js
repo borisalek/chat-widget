@@ -149,10 +149,11 @@ const styles = `
 }
 
 .quick-questions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
+   display: flex;
+    flex-direction: column;
+    gap: 8px;
     margin-top: 4px;
+    width: 100%;
 }
 
 .quick-btn {
