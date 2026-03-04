@@ -148,6 +148,11 @@ const styles = `
     border-top-right-radius: 4px;
 }
 
+.chat-message.bot.typing {
+    color: #aaa;
+    font-style: italic;
+}
+
 .quick-questions {
    display: flex;
     flex-direction: column;
@@ -216,6 +221,7 @@ const styles = `
 }
 
 .chat-input button:hover { opacity: 0.9; }
+.chat-input button:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .chat-toggle {
     position: fixed;
@@ -328,7 +334,8 @@ function startConversation(){
     messages.appendChild(quick);
 }
 
-function sendMessage(text, botReply){
+async function sendMessage(text, botReply){
+    // Prikazi korisnikovu poruku
     const user = document.createElement('div');
     user.className = 'chat-message user';
     user.textContent = text;
@@ -336,9 +343,51 @@ function sendMessage(text, botReply){
 
     const bot = document.createElement('div');
     bot.className = 'chat-message bot';
-    bot.textContent = botReply || "Thanks for your message! We'll get back to you shortly.";
-    messages.appendChild(bot);
 
+    // Ako postoji hardkodovani odgovor (quick buttons), koristi njega
+    if(botReply){
+        bot.textContent = botReply;
+        messages.appendChild(bot);
+        messages.scrollTop = messages.scrollHeight;
+        return;
+    }
+
+    // Inace pozovi n8n webhook
+    bot.className = 'chat-message bot typing';
+    bot.textContent = '...';
+    messages.appendChild(bot);
+    messages.scrollTop = messages.scrollHeight;
+
+    // Onemogući input dok ceka odgovor
+    sendBtn.disabled = true;
+    textarea.disabled = true;
+
+    try {
+        const webhookUrl = window.ChatWidgetConfig?.webhook?.url;
+        const route = window.ChatWidgetConfig?.webhook?.route || 'general';
+
+        const response = await fetch(webhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chatInput: text,
+                sessionId: currentSessionId,
+                route: route
+            })
+        });
+
+        const data = await response.json();
+        bot.className = 'chat-message bot';
+        bot.textContent = data.output || "Sorry, I couldn't process your request.";
+    } catch(e) {
+        bot.className = 'chat-message bot';
+        bot.textContent = "Connection error. Please try again.";
+    }
+
+    // Ponovo omoguci input
+    sendBtn.disabled = false;
+    textarea.disabled = false;
+    textarea.focus();
     messages.scrollTop = messages.scrollHeight;
 }
 
