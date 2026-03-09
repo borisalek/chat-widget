@@ -363,21 +363,31 @@
     addBotMsg(welcome());
 
     const questions = [
-      "Schedule DEMO",
-      "How long does it take to setup?",
-      "What's the pricing?"
+      {
+        text: "What services do you offer?",
+        reply: `Here's what we offer:<br><br>🔄 <b>Workflow Automation</b> – Automate repetitive tasks using n8n, Make & Zapier<br>🤖 <b>Custom AI Agents</b> – Intelligent bots tailored to your business<br>🔗 <b>System Integrations</b> – Connect your tools & platforms seamlessly<br>🌐 <b>No-Code Development</b> – Build apps & dashboards without writing code<br><br><a href="https://borisaleksicwebdesigner.framer.website/#services1" style="display:inline-block;margin-top:6px;padding:10px 18px;border-radius:999px;border:1.5px solid #e0e0e0;background:#fff;color:#333;font-weight:600;font-size:13px;text-decoration:none;" onmouseover="this.style.borderColor='var(--zc-primary)'" onmouseout="this.style.borderColor='#e0e0e0'">🔗 View all services →</a>`
+      },
+      {
+        text: "How much does it cost?",
+        reply: "Our packages start from $500. The final price depends on the complexity of your project."
+      },
+      {
+        text: "Build custom AI agents?",
+        reply: "Yes! We specialize in building custom AI agents using tools like n8n, Make, and OpenAI."
+      },
+      {
+        text: "Book a consultation",
+        reply: "Great! You can book a free consultation at <a href='https://nocodecreative.io/contact' style='color:var(--zc-primary);font-weight:600;text-decoration:none;'>nocodecreative.io/contact</a>. We'd love to hear about your project."
+      }
     ];
 
-    // Allow custom questions from config
-    const qs = cfg().branding?.quickQuestions || questions;
-
-    qs.forEach(q => {
+    questions.forEach(q => {
       const btn = document.createElement('button');
       btn.className = 'zc-qbtn';
-      btn.textContent = q;
+      btn.innerHTML = q.emoji ? q.emoji + " " + q.text : q.text;
       btn.onclick = () => {
         quickArea.innerHTML = '';
-        sendMessage(q);
+        sendMessage(q.text, q.reply);
       };
       quickArea.appendChild(btn);
     });
@@ -404,8 +414,11 @@
 
       const res  = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chatInput: text, sessionId, route })
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ chatInput: text, sessionId: sessionId, route: route })
       });
 
       const data = await res.json();
