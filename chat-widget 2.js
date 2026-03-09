@@ -380,6 +380,19 @@ async function sendMessage(text, botReply){
         const data = await response.json();
         bot.className = 'chat-message bot';
         bot.textContent = data.output || "Sorry, I couldn't process your request.";
+
+        // Ako je pitanje o uslugama, dodaj CTA ispod odgovora
+        const serviceKeywords = ['service', 'services', 'offer', 'what do you do', 'usluga', 'usluge'];
+        const isServiceQ = serviceKeywords.some(kw => text.toLowerCase().includes(kw));
+        if(isServiceQ){
+            const cta = document.createElement('a');
+            cta.href = 'https://nocodecreative.io/services';
+            cta.className = 'quick-btn';
+            cta.style.cssText = 'display:inline-block;margin-top:8px;text-decoration:none;';
+            cta.innerHTML = '🔗 View all services →';
+            messages.appendChild(cta);
+        }
+
     } catch(e) {
         bot.className = 'chat-message bot';
         bot.textContent = "Connection error. Please try again.";
