@@ -411,6 +411,20 @@
       const data = await res.json();
       bubble.classList.remove('typing');
       bubble.textContent = data.output || "Sorry, I couldn't process your request.";
+
+      // Ako je pitanje o uslugama, dodaj CTA ispod odgovora
+      const serviceKeywords = ['service', 'services', 'offer', 'what do you do', 'usluga', 'usluge'];
+      const isServiceQ = serviceKeywords.some(kw => text.toLowerCase().includes(kw));
+      if (isServiceQ) {
+        const cta = document.createElement('a');
+        cta.href = 'https://borisaleksicwebdesigner.framer.website/#services1';
+        cta.className = 'zc-qbtn';
+        cta.style.cssText = 'text-decoration:none;margin-top:-8px;';
+        cta.innerHTML = '🔗 View all services →';
+        msgsArea.appendChild(cta);
+        scroll();
+      }
+
     } catch {
       bubble.classList.remove('typing');
       bubble.textContent = "Connection error. Please try again.";
