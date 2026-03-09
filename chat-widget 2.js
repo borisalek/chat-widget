@@ -314,7 +314,7 @@ function startConversation(){
     quick.className = 'quick-questions';
 
     const questions = [
-        { text: "What services do you offer?", emoji: "🛠️", reply: `Here's what we offer:<br><br>🔄 <b>Workflow Automation</b> – Automate repetitive tasks using n8n, Make & Zapier<br>🤖 <b>Custom AI Agents</b> – Intelligent bots tailored to your business<br>🔗 <b>System Integrations</b> – Connect your tools & platforms seamlessly<br>🌐 <b>No-Code Development</b> – Build apps & dashboards without writing code<br><br><a href="https://nocodecreative.io/services" style="display:inline-block;margin-top:6px;padding:10px 18px;border-radius:50px;border:1.5px solid #c4a8ff;background:#fff;color:#5a2db8;font-weight:600;font-size:13px;text-decoration:none;" onmouseover="this.style.background='#f0e8ff';this.style.borderColor='#854fff'" onmouseout="this.style.background='#fff';this.style.borderColor='#c4a8ff'">🔗 View all services →</a>` },
+        { text: "What services do you offer?", emoji: "🛠️", reply: `Here's what we offer:<br><br>🔄 <b>Workflow Automation</b> – Automate repetitive tasks using n8n, Make & Zapier<br>🤖 <b>Custom AI Agents</b> – Intelligent bots tailored to your business<br>🔗 <b>System Integrations</b> – Connect your tools & platforms seamlessly<br>🌐 <b>No-Code Development</b> – Build apps & dashboards without writing code<br><br><a href="https://borisaleksicwebdesigner.framer.website/#services1" style="display:inline-block;margin-top:6px;padding:10px 18px;border-radius:50px;border:1.5px solid #c4a8ff;background:#fff;color:#5a2db8;font-weight:600;font-size:13px;text-decoration:none;" onmouseover="this.style.background='#f0e8ff';this.style.borderColor='#854fff'" onmouseout="this.style.background='#fff';this.style.borderColor='#c4a8ff'">🔗 View all services →</a>` },
         { text: "How much does it cost?", emoji: "💰", reply: "Our packages start from $500. The final price depends on the complexity of your project." },
         { text: "Build custom AI agents?", emoji: "🤖", reply: "Yes! We specialize in building custom AI agents using tools like n8n, Make, and OpenAI." },
         { text: "Book a consultation", emoji: "📅", reply: "Great! You can book a free consultation at nocodecreative.io/contact. We'd love to hear about your project." }
@@ -386,7 +386,7 @@ async function sendMessage(text, botReply){
         const isServiceQ = serviceKeywords.some(kw => text.toLowerCase().includes(kw));
         if(isServiceQ){
             const cta = document.createElement('a');
-            cta.href = 'https://nocodecreative.io/services';
+            cta.href = 'https://borisaleksicwebdesigner.framer.website/#services1';
             cta.className = 'quick-btn';
             cta.style.cssText = 'display:inline-block;margin-top:8px;text-decoration:none;';
             cta.innerHTML = '🔗 View all services →';
