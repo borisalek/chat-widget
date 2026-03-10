@@ -283,6 +283,43 @@
   let isOpen      = false;
   let started     = false;
 
+  /* ─── Persistence helpers ────────────────────────────────────── */
+  const STORAGE_KEY = 'zc_chat_history';
+  const SESSION_KEY = 'zc_chat_session';
+
+  function saveHistory() {
+    const msgs = [];
+    msgsArea.querySelectorAll('.zc-row, .zc-sender').forEach(el => {
+      msgs.push({ html: el.outerHTML, cls: el.className });
+    });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(msgs));
+    localStorage.setItem(SESSION_KEY, sessionId);
+  }
+
+  function loadHistory() {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    const savedSession = localStorage.getItem(SESSION_KEY);
+    if (!saved || !savedSession) return false;
+    try {
+      const msgs = JSON.parse(saved);
+      if (!msgs.length) return false;
+      sessionId = savedSession;
+      msgsArea.innerHTML = '';
+      msgs.forEach(m => {
+        const tmp = document.createElement('div');
+        tmp.innerHTML = m.html;
+        msgsArea.appendChild(tmp.firstChild);
+      });
+      scroll();
+      return true;
+    } catch { return false; }
+  }
+
+  function clearHistory() {
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(SESSION_KEY);
+  }
+
   /* ─── Open / Close ───────────────────────────────────────────── */
   function openPanel() {
     isOpen = true;
@@ -335,6 +372,7 @@
     msgsArea.appendChild(sender);
 
     scroll();
+    saveHistory();
     return bubble;
   }
 
@@ -348,6 +386,7 @@
     row.appendChild(bubble);
     msgsArea.appendChild(row);
     scroll();
+    saveHistory();
   }
 
   function scroll() {
@@ -356,10 +395,14 @@
 
   /* ─── Init conversation ──────────────────────────────────────── */
   function initConversation() {
-    sessionId = crypto.randomUUID();
     msgsArea.innerHTML = '';
     quickArea.innerHTML = '';
 
+    // Try to restore previous session
+    if (loadHistory()) return;
+
+    // Fresh start
+    sessionId = crypto.randomUUID();
     addBotMsg(welcome());
 
     const questions = [
@@ -424,6 +467,7 @@
       const data = await res.json();
       bubble.classList.remove('typing');
       bubble.textContent = data.output || "Sorry, I couldn't process your request.";
+      saveHistory();
 
       // Ako je pitanje o uslugama, dodaj CTA ispod odgovora
       const serviceKeywords = ['service', 'services', 'offer', 'what do you do', 'usluga', 'usluge'];
