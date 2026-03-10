@@ -1,5 +1,35 @@
 (function() {
 
+// ── Guard against double init ────────────────────────────────
+if (window.N8NChatWidgetInitialized) return;
+window.N8NChatWidgetInitialized = true;
+
+// ── Read config ──────────────────────────────────────────────
+const cfg          = window.ChatWidgetConfig || {};
+const webhookUrl   = cfg.webhook?.url   || '';
+const webhookRoute = cfg.webhook?.route || 'general';
+const welcomeText  = cfg.branding?.welcomeText || 'Hello! How can I assist you today?';
+const agentName    = cfg.branding?.name || 'Assistant';
+const logoUrl      = cfg.branding?.logo || '';
+const primaryColor = cfg.style?.primaryColor || '#854fff';
+
+// Build ctaList — supports plain strings OR objects: { text, cta: { label, url } }
+const ctaList = (cfg.branding?.quickQuestions || []).map(q =>
+    typeof q === 'string' ? { text: q, cta: null } : { text: q.text, cta: q.cta || null }
+);
+
+// Darken a hex color by ~20% for gradients
+function darken(hex) {
+    const n = parseInt(hex.replace('#', ''), 16);
+    const ch = v => Math.max(0, Math.min(255, v + Math.round(2.55 * -20)));
+    const r = ch(n >> 16);
+    const g = ch((n >> 8) & 0xff);
+    const b = ch(n & 0xff);
+    return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
+}
+const primaryDark = darken(primaryColor);
+
+// ── Styles ───────────────────────────────────────────────────
 const styles = `
 .n8n-chat-widget { font-family: 'Segoe UI', Arial, sans-serif; }
 
@@ -19,7 +49,6 @@ const styles = `
     overflow: hidden;
     z-index: 99999;
 }
-
 .chat-container.open { display: flex; }
 
 .chat-header {
@@ -29,36 +58,32 @@ const styles = `
     justify-content: space-between;
     background: #f4f0ff;
 }
-
 .chat-header-left {
     display: flex;
     align-items: center;
     gap: 10px;
 }
-
 .chat-header-back {
     background: none;
     border: none;
     font-size: 20px;
     cursor: pointer;
-    color: #854fff;
+    color: VAR_PRIMARY;
     padding: 0;
     line-height: 1;
 }
-
 .chat-header-logo {
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #854fff, #6b3fd4);
+    background: linear-gradient(135deg, VAR_PRIMARY, VAR_DARK);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #fff;
-    font-size: 18px;
-    font-weight: 700;
+    overflow: hidden;
 }
-
+.chat-header-logo img { width: 100%; height: 100%; object-fit: cover; }
+.chat-header-logo span { color: #fff; font-size: 16px; font-weight: 700; }
 .chat-header-close {
     background: none;
     border: none;
@@ -74,33 +99,28 @@ const styles = `
     text-align: center;
     padding: 30px 24px;
 }
-
 .new-conversation h2 {
     font-size: 22px;
     font-weight: 700;
     color: #1a1a1a;
     margin: 0 0 8px 0;
 }
-
 .new-conversation p {
     font-size: 14px;
     color: #888;
     margin: 0 0 24px 0;
 }
-
 .new-chat-btn {
     padding: 14px 24px;
     border-radius: 10px;
     border: none;
-    background: linear-gradient(135deg, #854fff, #6b3fd4);
+    background: linear-gradient(135deg, VAR_PRIMARY, VAR_DARK);
     color: #fff;
     cursor: pointer;
     font-size: 15px;
     font-weight: 600;
-    margin: 0 auto;
     transition: opacity 0.2s;
 }
-
 .new-chat-btn:hover { opacity: 0.9; }
 
 .chat-interface {
@@ -108,7 +128,6 @@ const styles = `
     flex-direction: column;
     height: 100%;
 }
-
 .chat-interface.active { display: flex; }
 
 .chat-messages {
@@ -120,7 +139,6 @@ const styles = `
     gap: 12px;
     background: #f4f0ff;
 }
-
 .chat-messages::-webkit-scrollbar { width: 4px; }
 .chat-messages::-webkit-scrollbar-thumb { background: #ddd; border-radius: 4px; }
 
@@ -132,7 +150,6 @@ const styles = `
     line-height: 1.55;
     word-break: break-word;
 }
-
 .chat-message.bot {
     background: #fff;
     color: #1a1a1a;
@@ -140,48 +157,43 @@ const styles = `
     border-top-left-radius: 4px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
-
 .chat-message.user {
-    background: linear-gradient(135deg, #854fff, #6b3fd4);
+    background: linear-gradient(135deg, VAR_PRIMARY, VAR_DARK);
     color: #fff;
     align-self: flex-end;
     border-top-right-radius: 4px;
 }
-
 .chat-message.bot.typing {
     color: #aaa;
     font-style: italic;
 }
 
 .quick-questions {
-   display: flex;
+    display: flex;
     flex-direction: column;
     gap: 8px;
     margin-top: 4px;
     width: 100%;
 }
-
 .quick-btn {
     padding: 10px 14px;
     border-radius: 50px;
-    border: 1.5px solid #c4a8ff;
+    border: 1.5px solid VAR_PRIMARY_55;
     background: #fff;
     cursor: pointer;
     font-size: 13px;
     text-align: center;
-    color: #5a2db8;
+    color: VAR_PRIMARY;
     font-weight: 500;
     transition: all 0.15s;
     display: flex;
     align-items: center;
-    gap: 6px;
     justify-content: center;
     white-space: nowrap;
 }
-
 .quick-btn:hover {
-    background: #f0e8ff;
-    border-color: #854fff;
+    background: VAR_PRIMARY_11;
+    border-color: VAR_PRIMARY;
 }
 
 .chat-input {
@@ -192,7 +204,6 @@ const styles = `
     background: #fff;
     align-items: flex-end;
 }
-
 .chat-input textarea {
     flex: 1;
     resize: none;
@@ -205,21 +216,18 @@ const styles = `
     transition: border 0.2s;
     line-height: 1.4;
 }
-
-.chat-input textarea:focus { border-color: #854fff; }
-
+.chat-input textarea:focus { border-color: VAR_PRIMARY; }
 .chat-input button {
     padding: 10px 18px;
     border-radius: 10px;
     border: none;
-    background: linear-gradient(135deg, #854fff, #6b3fd4);
+    background: linear-gradient(135deg, VAR_PRIMARY, VAR_DARK);
     color: #fff;
     cursor: pointer;
     font-size: 14px;
     font-weight: 600;
     transition: opacity 0.2s;
 }
-
 .chat-input button:hover { opacity: 0.9; }
 .chat-input button:disabled { opacity: 0.5; cursor: not-allowed; }
 
@@ -230,40 +238,61 @@ const styles = `
     width: 56px;
     height: 56px;
     border-radius: 50%;
-    background: linear-gradient(135deg, #854fff, #6b3fd4);
+    background: linear-gradient(135deg, VAR_PRIMARY, VAR_DARK);
     color: #fff;
     border: none;
     cursor: pointer;
     font-size: 22px;
-    box-shadow: 0 4px 16px rgba(133,79,255,0.4);
+    box-shadow: 0 4px 16px VAR_PRIMARY_40;
     z-index: 99999;
     transition: transform 0.2s;
     display: flex;
     align-items: center;
     justify-content: center;
 }
-
 .chat-toggle:hover { transform: scale(1.08); }
-`;
+.cta-link {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 9px 18px;
+    border-radius: 50px;
+    border: 1.5px solid VAR_PRIMARY_55;
+    background: #fff;
+    color: VAR_PRIMARY;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.15s;
+    align-self: flex-start;
+}
+.cta-link:hover {
+    background: VAR_PRIMARY_11;
+    border-color: VAR_PRIMARY;
+}
+`
+.replaceAll('VAR_PRIMARY',    primaryColor)
+.replaceAll('VAR_DARK',       primaryDark)
+.replaceAll('VAR_PRIMARY_55', primaryColor + '55')
+.replaceAll('VAR_PRIMARY_11', primaryColor + '11')
+.replaceAll('VAR_PRIMARY_40', primaryColor + '40');
 
 const styleSheet = document.createElement('style');
 styleSheet.textContent = styles;
 document.head.appendChild(styleSheet);
 
-if(window.N8NChatWidgetInitialized) return;
-window.N8NChatWidgetInitialized = true;
-
-let currentSessionId = "";
+// ── DOM ──────────────────────────────────────────────────────
+const logoHtml = logoUrl
+    ? `<img src="${logoUrl}" alt="${agentName}">`
+    : `<span>${agentName.charAt(0).toUpperCase()}</span>`;
 
 const widget = document.createElement('div');
 widget.className = 'n8n-chat-widget';
-
 widget.innerHTML = `
 <div class="chat-container">
     <div class="chat-header">
         <div class="chat-header-left">
             <button class="chat-header-back">‹</button>
-            <div class="chat-header-logo">n</div>
+            <div class="chat-header-logo">${logoHtml}</div>
         </div>
         <button class="chat-header-close">✕</button>
     </div>
@@ -282,153 +311,131 @@ widget.innerHTML = `
         </div>
     </div>
 </div>
-
 <button class="chat-toggle">💬</button>
 `;
-
 document.body.appendChild(widget);
 
 const chatContainer = widget.querySelector('.chat-container');
-const toggle = widget.querySelector('.chat-toggle');
-const newChatBtn = widget.querySelector('.new-chat-btn');
+const toggle        = widget.querySelector('.chat-toggle');
+const newChatBtn    = widget.querySelector('.new-chat-btn');
 const chatInterface = widget.querySelector('.chat-interface');
-const messages = widget.querySelector('.chat-messages');
-const textarea = widget.querySelector('textarea');
-const sendBtn = widget.querySelector('button[type="submit"]');
-const closeBtn = widget.querySelector('.chat-header-close');
+const messages      = widget.querySelector('.chat-messages');
+const textarea      = widget.querySelector('textarea');
+const sendBtn       = widget.querySelector('button[type="submit"]');
+const closeBtn      = widget.querySelector('.chat-header-close');
 
-function uuid(){ return crypto.randomUUID(); }
+let currentSessionId = '';
+function uuid() { return crypto.randomUUID(); }
 
-function startConversation(){
+// ── CTA helpers ──────────────────────────────────────────────
+function norm(s) { return s.trim().toLowerCase().replace(/[?!.,]/g, ''); }
+function matchCta(input) {
+    return ctaList.find(c => norm(c.text) === norm(input)) || null;
+}
+
+function appendCtaButtons() {
+    if (!ctaList.length) return;
+    const wrap = document.createElement('div');
+    wrap.className = 'quick-questions';
+    ctaList.forEach(q => {
+        const btn = document.createElement('button');
+        btn.className = 'quick-btn';
+        btn.textContent = q.text;
+        btn.onclick = () => { wrap.remove(); sendMessage(q.text); };
+        wrap.appendChild(btn);
+    });
+    messages.appendChild(wrap);
+    messages.scrollTop = messages.scrollHeight;
+}
+
+// ── Conversation ─────────────────────────────────────────────
+function startConversation() {
     currentSessionId = uuid();
     widget.querySelector('.new-conversation').style.display = 'none';
     chatInterface.classList.add('active');
-    messages.innerHTML = "";
+    messages.innerHTML = '';
 
     const bot = document.createElement('div');
     bot.className = 'chat-message bot';
-    bot.innerHTML = "Hello! How can I assist you today?<br><br>Please describe your use case in as much detail as you can so I can help you effectively.";
+    bot.textContent = welcomeText;
     messages.appendChild(bot);
 
-    const quick = document.createElement('div');
-    quick.className = 'quick-questions';
-
-    ctaList.forEach(q => {
-        const btn = document.createElement('button');
-        btn.className = 'quick-btn';
-        btn.innerHTML = `${q.emoji} ${q.text}`;
-        btn.onclick = () => {
-            quick.remove();
-            sendMessage(q.text);
-        };
-        quick.appendChild(btn);
-    });
-
-    messages.appendChild(quick);
-}
-
-// CTA definitions — single source of truth used everywhere
-const ctaList = [
-    { text: "What services do you offer?", emoji: "🛠️" },
-    { text: "Location marketing",           emoji: "📍" },
-    { text: "Global B2B marketing",         emoji: "🌍" },
-    { text: "Book a consultation",          emoji: "📅" }
-];
-
-// Returns normalised CTA text if user typed something matching one of the CTAs, else null
-function matchCta(input) {
-    const norm = input.trim().toLowerCase().replace(/[?!.,]/g, '');
-    return ctaList.find(c => c.text.toLowerCase().replace(/[?!.,]/g, '') === norm) || null;
-}
-
-// Renders the 4 CTA buttons below the last bot message
-function appendCtaButtons() {
-    const quick = document.createElement('div');
-    quick.className = 'quick-questions';
-    ctaList.forEach(q => {
-        const btn = document.createElement('button');
-        btn.className = 'quick-btn';
-        btn.innerHTML = `${q.emoji} ${q.text}`;
-        btn.onclick = () => {
-            quick.remove();
-            sendMessage(q.text);
-        };
-        quick.appendChild(btn);
-    });
-    messages.appendChild(quick);
-    messages.scrollTop = messages.scrollHeight;
+    appendCtaButtons();
 }
 
 async function sendMessage(text) {
-    // If user typed something matching a CTA, normalise to exact CTA text
-    const matched = matchCta(text);
+    const matched  = matchCta(text);
     const sendText = matched ? matched.text : text;
 
-    // Show user bubble
-    const user = document.createElement('div');
-    user.className = 'chat-message user';
-    user.textContent = sendText;
-    messages.appendChild(user);
+    // User bubble
+    const userEl = document.createElement('div');
+    userEl.className = 'chat-message user';
+    userEl.textContent = sendText;
+    messages.appendChild(userEl);
 
     // Typing indicator
-    const bot = document.createElement('div');
-    bot.className = 'chat-message bot typing';
-    bot.textContent = '...';
-    messages.appendChild(bot);
+    const botEl = document.createElement('div');
+    botEl.className = 'chat-message bot typing';
+    botEl.textContent = '...';
+    messages.appendChild(botEl);
     messages.scrollTop = messages.scrollHeight;
 
-    // Disable input while waiting
-    sendBtn.disabled = true;
+    sendBtn.disabled  = true;
     textarea.disabled = true;
 
     try {
-        const webhookUrl = window.ChatWidgetConfig?.webhook?.url;
-        const route = window.ChatWidgetConfig?.webhook?.route || 'general';
-
-        const response = await fetch(webhookUrl, {
+        const res  = await fetch(webhookUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 chatInput: sendText,
                 sessionId: currentSessionId,
-                route: route
+                route:     webhookRoute
             })
         });
-
-        const data = await response.json();
-        bot.className = 'chat-message bot';
-        bot.textContent = data.output || "Sorry, I couldn't process your request.";
-
-    } catch(e) {
-        bot.className = 'chat-message bot';
-        bot.textContent = "Connection error. Please try again.";
+        const data = await res.json();
+        botEl.className   = 'chat-message bot';
+        botEl.textContent = data.output || "Sorry, I couldn't process your request.";
+    } catch (e) {
+        botEl.className   = 'chat-message bot';
+        botEl.textContent = 'Connection error. Please try again.';
     }
 
-    // Re-enable input
-    sendBtn.disabled = false;
+    sendBtn.disabled  = false;
     textarea.disabled = false;
     textarea.focus();
 
-    // Always show CTA buttons after every bot response
+    // If this message matched a CTA that has a link, append it below bot reply
+    if (matched && matched.cta) {
+        const link = document.createElement('a');
+        link.className = 'cta-link';
+        link.href      = matched.cta.url;
+        link.target    = '_blank';
+        link.rel       = 'noopener';
+        link.textContent = matched.cta.label;
+        messages.appendChild(link);
+    }
+
+    // Always show CTAs after every bot response
     appendCtaButtons();
 }
 
+// ── Event listeners ──────────────────────────────────────────
 newChatBtn.onclick = startConversation;
-closeBtn.onclick = () => chatContainer.classList.remove('open');
+closeBtn.onclick   = () => chatContainer.classList.remove('open');
+toggle.onclick     = () => chatContainer.classList.toggle('open');
 
 sendBtn.onclick = () => {
     const msg = textarea.value.trim();
-    if(msg){ sendMessage(msg); textarea.value = ""; }
+    if (msg) { sendMessage(msg); textarea.value = ''; }
 };
 
 textarea.addEventListener('keypress', e => {
-    if(e.key === 'Enter' && !e.shiftKey){
+    if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         const msg = textarea.value.trim();
-        if(msg){ sendMessage(msg); textarea.value = ""; }
+        if (msg) { sendMessage(msg); textarea.value = ''; }
     }
 });
-
-toggle.onclick = () => chatContainer.classList.toggle('open');
 
 })();
