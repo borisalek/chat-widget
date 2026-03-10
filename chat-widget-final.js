@@ -373,7 +373,7 @@
       btn.textContent = q.text;
       btn.onclick = () => {
         quickArea.innerHTML = '';
-        sendMessage(q.text, null, q.cta);
+        sendMessage(q.text);
       };
       quickArea.appendChild(btn);
     });
@@ -384,27 +384,8 @@
     msgsArea.scrollTop = el.offsetTop - msgsArea.offsetTop;
   }
 
-  /* ─── Show CTA quick buttons (after every bot response) ─────── */
-  function showCtaButtons() {
-    const ctaList = (cfg().branding?.quickQuestions || []).map(q =>
-      typeof q === 'string' ? { text: q, cta: null } : { text: q.text, cta: q.cta || null }
-    );
-    if (!ctaList.length) return;
-    quickArea.innerHTML = '';
-    ctaList.forEach(q => {
-      const btn = document.createElement('button');
-      btn.className = 'zc-qbtn';
-      btn.textContent = q.text;
-      btn.onclick = () => {
-        quickArea.innerHTML = '';
-        sendMessage(q.text, null, q.cta);
-      };
-      quickArea.appendChild(btn);
-    });
-  }
-
   /* ─── Send message ───────────────────────────────────────────── */
-  async function sendMessage(text, _unused, cta) {
+  async function sendMessage(text) {
     quickArea.innerHTML = '';
     addUserMsg(text);
 
@@ -433,16 +414,22 @@
       bubble.classList.remove('typing');
       bubble.textContent = data.output || "Sorry, I couldn't process your request.";
 
-      // Append CTA link below bot response if this question has one
-      if (cta) {
-        const link = document.createElement('a');
-        link.href      = cta.url;
-        link.target    = '_blank';
-        link.rel       = 'noopener';
-        link.className = 'zc-qbtn';
-        link.style.cssText = 'text-decoration:none; display:inline-block; align-self:flex-start; margin-left:42px;';
-        link.textContent   = cta.label;
-        msgsArea.appendChild(link);
+      // Show CTA link only if user asked about services (keyword match)
+      const serviceKw = ['service', 'services', 'offer', 'what do you do'];
+      if (serviceKw.some(kw => text.toLowerCase().includes(kw))) {
+        const servicesCta = (cfg().branding?.quickQuestions || [])
+          .map(q => typeof q === 'string' ? null : q)
+          .find(q => q && q.cta && q.text.toLowerCase().includes('service'));
+        if (servicesCta) {
+          const link = document.createElement('a');
+          link.href      = servicesCta.cta.url;
+          link.target    = '_blank';
+          link.rel       = 'noopener';
+          link.className = 'zc-qbtn';
+          link.style.cssText = 'text-decoration:none; display:inline-block; align-self:flex-start; margin-left:42px;';
+          link.textContent   = servicesCta.cta.label;
+          msgsArea.appendChild(link);
+        }
       }
 
     } catch {
@@ -457,8 +444,7 @@
     // Scroll back so bot reply starts at top
     scrollToTop(botRow);
 
-    // Show CTA quick buttons again
-    showCtaButtons();
+
   }
 
   /* ─── Input events ───────────────────────────────────────────── */
