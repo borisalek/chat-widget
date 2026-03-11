@@ -381,7 +381,7 @@
 
     scroll();
     saveHistory();
-    return bubble;
+    return { bubble, row };
   }
 
   /* ─── Add user message ───────────────────────────────────────── */
@@ -455,11 +455,12 @@
     addUserMsg(text);
 
     if (hardReply) {
-      addBotMsg(hardReply);
+      const { row: hardRow } = addBotMsg(hardReply);
+      scroll(hardRow);
       return;
     }
 
-    const bubble = addBotMsg('...', true);
+    const { bubble, row: botRow } = addBotMsg('...', true);
 
     sendBtn.disabled = true;
     textarea.disabled = true;
@@ -481,6 +482,7 @@
       bubble.classList.remove('typing');
       bubble.textContent = data.output || "Sorry, I couldn't process your request.";
       saveHistory();
+      scroll(botRow);
 
       // Ako je pitanje o uslugama, dodaj CTA ispod odgovora
       const serviceKeywords = ['service', 'services', 'offer', 'what do you do', 'usluga', 'usluge'];
@@ -503,7 +505,6 @@
     sendBtn.disabled = false;
     textarea.disabled = false;
     textarea.focus();
-    scroll();
   }
 
   /* ─── Input events ───────────────────────────────────────────── */
