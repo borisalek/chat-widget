@@ -287,12 +287,14 @@
   const STORAGE_KEY = 'zc_chat_history';
   const SESSION_KEY = 'zc_chat_session';
 
+  const EXPIRY_MS = 5 * 60 * 1000; // 5 minuta
+
   function saveHistory() {
     const msgs = [];
     msgsArea.querySelectorAll('.zc-row, .zc-sender').forEach(el => {
       msgs.push({ html: el.outerHTML, cls: el.className });
     });
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(msgs));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ msgs, ts: Date.now() }));
     localStorage.setItem(SESSION_KEY, sessionId);
   }
 
@@ -301,8 +303,14 @@
     const savedSession = localStorage.getItem(SESSION_KEY);
     if (!saved || !savedSession) return false;
     try {
-      const msgs = JSON.parse(saved);
-      if (!msgs.length) return false;
+      const parsed = JSON.parse(saved);
+      const age = Date.now() - (parsed.ts || 0);
+      if (age > EXPIRY_MS) {
+        clearHistory();
+        return false;
+      }
+      const msgs = parsed.msgs;
+      if (!msgs || !msgs.length) return false;
       sessionId = savedSession;
       msgsArea.innerHTML = '';
       msgs.forEach(m => {
