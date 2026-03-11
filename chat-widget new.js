@@ -385,12 +385,17 @@
     bubble.textContent = text;
     row.appendChild(bubble);
     msgsArea.appendChild(row);
-    scroll();
+    scroll(row);
     saveHistory();
   }
 
-  function scroll() {
-    msgsArea.scrollTop = msgsArea.scrollHeight;
+  function scroll(toEl) {
+    if (toEl) {
+      // Scroll so the element is at the top of the visible area
+      msgsArea.scrollTop = toEl.offsetTop - msgsArea.offsetTop - 8;
+    } else {
+      msgsArea.scrollTop = msgsArea.scrollHeight;
+    }
   }
 
   /* ─── Init conversation ──────────────────────────────────────── */
