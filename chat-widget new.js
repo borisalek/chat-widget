@@ -61,7 +61,7 @@
   transform: translateX(-50%) translateY(10px);
   width: 420px;
   max-width: calc(100vw - 32px);
-  height: 300px;
+  height: 500px;
   background: #fff;
   border-radius: 24px;
   box-shadow: 0 8px 48px rgba(0,0,0,0.13);
