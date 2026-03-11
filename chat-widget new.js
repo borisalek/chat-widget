@@ -399,8 +399,9 @@
 
   function scroll(toEl) {
     if (toEl) {
-      // Scroll so the element is at the top of the visible area
-      msgsArea.scrollTop = toEl.offsetTop - msgsArea.offsetTop - 8;
+      setTimeout(() => {
+        toEl.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      }, 50);
     } else {
       msgsArea.scrollTop = msgsArea.scrollHeight;
     }
