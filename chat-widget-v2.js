@@ -291,7 +291,7 @@
 
   function saveHistory() {
     const msgs = [];
-    msgsArea.querySelectorAll('.zc-row, .zc-sender').forEach(el => {
+    msgsArea.querySelectorAll('.zc-row, .zc-sender, a.zc-qbtn').forEach(el => {
       msgs.push({ html: el.outerHTML, cls: el.className });
     });
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ msgs, ts: Date.now() }));
