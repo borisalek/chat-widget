@@ -396,8 +396,7 @@ async function sendMessage(text, botReply){
 
         // Ako korisnik ILI bot pominju booking/sastanak, dodaj Calendly CTA
         const botResponse = (data.output || '').toLowerCase();
-        const meetingKeywords = ['arrange a time', 'book', 'schedule', 'consultation', 'meeting', 'slot', 'calendar', 'available', 'timezone'];
-        const isMeetingResponse = meetingKeywords.some(kw => botResponse.includes(kw));
+const meetingKeywords = ['arrange a time', 'arrange a meeting', 'book', 'schedule', 'consultation', 'meeting', 'slot', 'calendar', 'available', 'timezone', 'days and times', 'suitable slot', 'happy to arrange', 'would like to meet'];        const isMeetingResponse = meetingKeywords.some(kw => botResponse.includes(kw));
         const isMeetingRequest = meetingKeywords.some(kw => text.toLowerCase().includes(kw));
         if(isMeetingResponse || isMeetingRequest){
             const cta = document.createElement('a');
