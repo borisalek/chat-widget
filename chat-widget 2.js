@@ -394,19 +394,14 @@ async function sendMessage(text, botReply){
             messages.appendChild(cta);
         }
 
-        // Ako korisnik ILI bot pominju booking/sastanak, dodaj Calendly CTA
-        const botResponse = (data.output || '').toLowerCase();
-const meetingKeywords = ['arrange a time', 'arrange a meeting', 'book', 'schedule', 'consultation', 'meeting', 'slot', 'calendar', 'available', 'timezone', 'days and times', 'suitable slot', 'happy to arrange', 'would like to meet'];        const isMeetingResponse = meetingKeywords.some(kw => botResponse.includes(kw));
-        const isMeetingRequest = meetingKeywords.some(kw => text.toLowerCase().includes(kw));
-        if(isMeetingResponse || isMeetingRequest){
-            const cta = document.createElement('a');
-            cta.href = 'https://calendly.com/aleksicboris94/30min';
-            cta.target = '_blank';
-            cta.className = 'quick-btn';
-            cta.style.cssText = 'display:inline-block;margin-top:8px;text-decoration:none;';
-            cta.innerHTML = '📅 Book a free consultation →';
-            messages.appendChild(cta);
-        }
+        // Uvek prikazuj Calendly CTA ispod svakog bot odgovora
+        const cta = document.createElement('a');
+        cta.href = 'https://calendly.com/aleksicboris94/30min';
+        cta.target = '_blank';
+        cta.className = 'quick-btn';
+        cta.style.cssText = 'display:inline-block;margin-top:8px;text-decoration:none;';
+        cta.innerHTML = '📅 Book a free consultation →';
+        messages.appendChild(cta);
 
     } catch(e) {
         bot.className = 'chat-message bot';
