@@ -335,7 +335,6 @@ function startConversation(){
 }
 
 async function sendMessage(text, botReply){
-    // Prikazi korisnikovu poruku
     const user = document.createElement('div');
     user.className = 'chat-message user';
     user.textContent = text;
@@ -344,7 +343,6 @@ async function sendMessage(text, botReply){
     const bot = document.createElement('div');
     bot.className = 'chat-message bot';
 
-    // Ako postoji hardkodovani odgovor (quick buttons), koristi njega
     if(botReply){
         bot.innerHTML = botReply;
         messages.appendChild(bot);
@@ -353,13 +351,11 @@ async function sendMessage(text, botReply){
         return;
     }
 
-    // Inace pozovi n8n webhook
     bot.className = 'chat-message bot typing';
     bot.textContent = '...';
     messages.appendChild(bot);
     messages.scrollTop = messages.scrollHeight;
 
-    // Onemogući input dok ceka odgovor
     sendBtn.disabled = true;
     textarea.disabled = true;
 
@@ -394,12 +390,29 @@ async function sendMessage(text, botReply){
             messages.appendChild(cta);
         }
 
-        // Ako korisnik ILI bot pominju booking/sastanak, dodaj Calendly CTA
+        // Ako bot odgovor sadrzi fraze vezane za booking, dodaj Calendly CTA
         const botResponse = (data.output || '').toLowerCase();
-        const meetingKeywords = ['arrange a time', 'book', 'schedule', 'consultation', 'meeting', 'slot', 'calendar', 'available', 'timezone'];
-        const isMeetingResponse = meetingKeywords.some(kw => botResponse.includes(kw));
-        const isMeetingRequest = meetingKeywords.some(kw => text.toLowerCase().includes(kw));
-        if(isMeetingResponse || isMeetingRequest){
+        const meetingPhrases = [
+            'check the calendar',
+            'book a suitable',
+            'suitable slot',
+            '30-minute call',
+            'days and times',
+            'arrange a time',
+            'arrange a meeting',
+            'book a meeting',
+            'schedule a call',
+            'book in a',
+            'quick call',
+            'happy to arrange',
+            'love to help arrange',
+            'book an appointment',
+            'free consultation',
+            'times suit you',
+            'times are best'
+        ];
+        const isMeetingResponse = meetingPhrases.some(kw => botResponse.includes(kw));
+        if(isMeetingResponse){
             const cta = document.createElement('a');
             cta.href = 'https://calendly.com/aleksicboris94/30min';
             cta.target = '_blank';
@@ -414,7 +427,6 @@ async function sendMessage(text, botReply){
         bot.textContent = "Connection error. Please try again.";
     }
 
-    // Ponovo omoguci input
     sendBtn.disabled = false;
     textarea.disabled = false;
     textarea.focus();
