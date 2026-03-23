@@ -396,6 +396,42 @@ async function sendMessage(text) {
         const data = await res.json();
         botEl.className   = 'chat-message bot';
         botEl.textContent = data.output || "Sorry, I couldn't process your request.";
+
+        // Ako bot odgovor sadrzi fraze vezane za booking, dodaj Calendly CTA
+        const botResponse = (data.output || '').toLowerCase();
+        const meetingPhrases = [
+            'check the calendar',
+            'book a suitable',
+            'suitable slot',
+            '30-minute call',
+            'days and times',
+            'arrange a time',
+            'arrange a meeting',
+            'book a meeting',
+            'schedule a call',
+            'book in a',
+            'quick call',
+            'happy to arrange',
+            'love to help arrange',
+            'book an appointment',
+            'free consultation',
+            'times suit you',
+            'times are best',
+            'which days',
+            'what days',
+            'book a slot'
+        ];
+        const isMeetingResponse = meetingPhrases.some(kw => botResponse.includes(kw));
+        if (isMeetingResponse) {
+            const ctaEl = document.createElement('a');
+            ctaEl.className   = 'cta-link';
+            ctaEl.href        = 'https://calendly.com/aleksicboris94/30min';
+            ctaEl.target      = '_blank';
+            ctaEl.rel         = 'noopener';
+            ctaEl.textContent = '📅 Book a free consultation →';
+            messages.appendChild(ctaEl);
+        }
+
     } catch (e) {
         botEl.className   = 'chat-message bot';
         botEl.textContent = 'Connection error. Please try again.';
