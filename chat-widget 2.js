@@ -394,11 +394,12 @@ async function sendMessage(text, botReply){
             messages.appendChild(cta);
         }
 
-        // Ako bot odgovor govori o zakazivanju sastanka, dodaj Calendly CTA
+        // Ako korisnik ILI bot pominju booking/sastanak, dodaj Calendly CTA
         const botResponse = (data.output || '').toLowerCase();
         const meetingKeywords = ['arrange a time', 'book', 'schedule', 'consultation', 'meeting', 'slot', 'calendar', 'available', 'timezone'];
         const isMeetingResponse = meetingKeywords.some(kw => botResponse.includes(kw));
-        if(isMeetingResponse){
+        const isMeetingRequest = meetingKeywords.some(kw => text.toLowerCase().includes(kw));
+        if(isMeetingResponse || isMeetingRequest){
             const cta = document.createElement('a');
             cta.href = 'https://calendly.com/aleksicboris94/30min';
             cta.target = '_blank';
