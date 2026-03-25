@@ -480,7 +480,6 @@
         const q = text.toLowerCase();
         const questions = cfg().branding?.quickQuestions || [];
 
-        const bookKeywords = ['book', 'consultation', 'schedule', 'call', 'meeting', 'appointment'];
         const serviceKeywords = [
           'service', 'services', 'offer', 'what do you do',
           'b2b', 'marketing', 'location', 'global', 'seo',
@@ -488,15 +487,8 @@
           'agent', 'integration', 'no-code', 'nocode', 'usluga', 'usluge'
         ];
 
-        const isBookQ    = bookKeywords.some(kw => q.includes(kw));
-        const isServiceQ = !isBookQ && serviceKeywords.some(kw => q.includes(kw));
-
-        if (isBookQ) {
-          // find book CTA
-          const bookQ = questions.find(q => q.text.toLowerCase().includes('book'));
-          if (bookQ) ctaToShow = bookQ.cta;
-        } else if (isServiceQ) {
-          // find services CTA — first quickQuestion
+        const isServiceQ = serviceKeywords.some(kw => q.includes(kw));
+        if (isServiceQ) {
           const serviceQ = questions[0];
           if (serviceQ) ctaToShow = serviceQ.cta;
         }
