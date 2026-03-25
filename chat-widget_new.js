@@ -476,24 +476,6 @@
       // Determine which CTA to show
       let ctaToShow = cta || null;
 
-      if (!ctaToShow) {
-        const q = text.toLowerCase();
-        const questions = cfg().branding?.quickQuestions || [];
-
-        const serviceKeywords = [
-          'service', 'services', 'offer', 'what do you do',
-          'b2b', 'marketing', 'location', 'global', 'seo',
-          'website', 'digital', 'campaign', 'strategy', 'automation',
-          'agent', 'integration', 'no-code', 'nocode', 'usluga', 'usluge'
-        ];
-
-        const isServiceQ = serviceKeywords.some(kw => q.includes(kw));
-        if (isServiceQ) {
-          const serviceQ = questions[0];
-          if (serviceQ) ctaToShow = serviceQ.cta;
-        }
-      }
-
       if (ctaToShow) {
         const ctaEl = document.createElement('a');
         ctaEl.href = ctaToShow.url;
