@@ -424,39 +424,22 @@
     sessionId = crypto.randomUUID();
     addBotMsg(welcome());
 
-    const questions = [
-      {
-        text: "What services do you offer?",
-        reply: `Here's what we offer:<br><br>🔄 <b>Workflow Automation</b> – Automate repetitive tasks using n8n, Make & Zapier<br>🤖 <b>Custom AI Agents</b> – Intelligent bots tailored to your business<br>🔗 <b>System Integrations</b> – Connect your tools & platforms seamlessly<br>🌐 <b>No-Code Development</b> – Build apps & dashboards without writing code<br><br><a href="https://borisaleksicwebdesigner.framer.website/#services1" style="display:inline-block;margin-top:6px;padding:10px 18px;border-radius:999px;border:1.5px solid #e0e0e0;background:#fff;color:#333;font-weight:600;font-size:13px;text-decoration:none;" onmouseover="this.style.borderColor='var(--zc-primary)'" onmouseout="this.style.borderColor='#e0e0e0'">🔗 View all services →</a>`
-      },
-      {
-        text: "How much does it cost?",
-        reply: "Our packages start from $500. The final price depends on the complexity of your project."
-      },
-      {
-        text: "Build custom AI agents?",
-        reply: "Yes! We specialize in building custom AI agents using tools like n8n, Make, and OpenAI."
-      },
-      {
-        text: "Book a consultation",
-        reply: "Great! You can book a free consultation at <a href='https://nocodecreative.io/contact' style='color:var(--zc-primary);font-weight:600;text-decoration:none;'>nocodecreative.io/contact</a>. We'd love to hear about your project."
-      }
-    ];
+    const questions = cfg().branding?.quickQuestions || [];
 
     questions.forEach(q => {
       const btn = document.createElement('button');
       btn.className = 'zc-qbtn';
-      btn.innerHTML = q.emoji ? q.emoji + " " + q.text : q.text;
+      btn.textContent = q.text;
       btn.onclick = () => {
         quickArea.innerHTML = '';
-        sendMessage(q.text, q.reply);
+        sendMessage(q.text, null, q.cta || null);
       };
       quickArea.appendChild(btn);
     });
   }
 
   /* ─── Send message ───────────────────────────────────────────── */
-  async function sendMessage(text, hardReply) {
+  async function sendMessage(text, hardReply, cta) {
     quickArea.innerHTML = '';
     addUserMsg(text);
 
@@ -490,16 +473,36 @@
       saveHistory();
       scroll(botRow);
 
-      // Ako je pitanje o uslugama, dodaj CTA ispod odgovora
-      const serviceKeywords = ['service', 'services', 'offer', 'what do you do', 'usluga', 'usluge'];
-      const isServiceQ = serviceKeywords.some(kw => text.toLowerCase().includes(kw));
-      if (isServiceQ) {
-        const cta = document.createElement('a');
-        cta.href = 'https://borisaleksicwebdesigner.framer.website/#services1';
-        cta.className = 'zc-qbtn';
-        cta.style.cssText = 'text-decoration:none;margin-top:-8px;';
-        cta.innerHTML = '🔗 View all services →';
-        msgsArea.appendChild(cta);
+      // Determine which CTA to show
+      let ctaToShow = cta || null;
+
+      if (!ctaToShow) {
+        // Keywords that indicate a services-related question → show services CTA
+        const serviceKeywords = [
+          'service', 'services', 'offer', 'what do you do',
+          'b2b', 'marketing', 'location', 'global', 'seo',
+          'website', 'digital', 'campaign', 'strategy', 'automation',
+          'agent', 'integration', 'no-code', 'nocode', 'usluga', 'usluge'
+        ];
+        const isServiceQ = serviceKeywords.some(kw => text.toLowerCase().includes(kw));
+
+        if (isServiceQ) {
+          // Always use the services CTA (first quickQuestion with a cta)
+          const serviceQ = (cfg().branding?.quickQuestions || []).find(q => q.cta);
+          if (serviceQ) ctaToShow = serviceQ.cta;
+        }
+      }
+
+      if (ctaToShow) {
+        const ctaEl = document.createElement('a');
+        ctaEl.href = ctaToShow.url;
+        ctaEl.target = '_blank';
+        ctaEl.rel = 'noopener noreferrer';
+        ctaEl.className = 'zc-qbtn';
+        ctaEl.style.cssText = 'text-decoration:none;margin-top:-8px;';
+        ctaEl.innerHTML = ctaToShow.label;
+        msgsArea.appendChild(ctaEl);
+        saveHistory();
         scroll();
       }
 
