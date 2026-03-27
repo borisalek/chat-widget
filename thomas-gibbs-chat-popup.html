@@ -105,6 +105,15 @@
   /* ── TIMELINE ── */
   .timeline { position: relative; }
 
+  .curves-svg {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    overflow: visible;
+    z-index: 0;
+  }
+
 
 
   /* ── MESSAGE ROW ── */
@@ -374,7 +383,7 @@
   <!-- Scroll area -->
   <div class="scroll-area" id="scrollArea">
     <div class="timeline" id="timeline">
-      <div id="curvesSvg"></div>
+      <svg class="curves-svg" id="curvesSvg"></svg>
     </div>
   </div>
 
@@ -467,14 +476,16 @@ function addMsg(text, side, typing = false) {
   return { row, bubble };
 }
 
-// ── Draw curves: Vector4.png from widget edge to avatar ──
-const CURVE_IMG_URL = 'https://raw.githubusercontent.com/borisalek/chat-widget/refs/heads/main/Vector%204.png';
-
+// ── Draw curves: SVG bezier from widget edge to avatar ──
 function drawCurves() {
-  timeline.querySelectorAll('.curve-img').forEach(el => el.remove());
+  const svgEl = document.getElementById('curvesSvg');
+  svgEl.innerHTML = '';
+  const defs = document.createElementNS('http://www.w3.org/2000/svg','defs');
+  svgEl.appendChild(defs);
 
   const rows = Array.from(timeline.querySelectorAll('.msg-row'));
   const tlRect = timeline.getBoundingClientRect();
+  const W = tlRect.width;
 
   for (let i = 0; i < rows.length - 1; i++) {
     const from     = rows[i];
@@ -488,57 +499,66 @@ function drawCurves() {
     const fromRect = fromBubble.getBoundingClientRect();
     const toRect   = toTarget.getBoundingClientRect();
 
-    // top = bottom of current bubble
-    // bottom = vertical center of next avatar
-    const top    = fromRect.bottom - tlRect.top;
-    const bottom = toRect.top - tlRect.top + toRect.height / 2;
-    const h      = Math.max(bottom - top, 60);
+    // End point: center of avatar/bubble of next message
+    const ex = toRect.left + toRect.width / 2 - tlRect.left;
+    const ey = toRect.top  + toRect.height / 2 - tlRect.top;
 
-    const img = document.createElement('img');
-    img.className = 'curve-img';
-    img.src = CURVE_IMG_URL;
+    // Start point: widget edge, vertically at bottom of current bubble
+    const sy = fromRect.bottom - tlRect.top;
+
+    let sx, gradId, x1g, y1g, x2g, y2g;
 
     if (fromSide === 'left') {
-      // User bubble (left) -> next is agent (right)
-      // Vector: bottom-left starts at avatar center, horizontal end goes to right wall
-      // We mirror it: right wall -> curves down-left to agent avatar
-      // Anchor right:0, top at fromRect.bottom
-      // Width = full width minus avatar left position
-      const w = tlRect.width - (toRect.left - tlRect.left);
-      img.style.cssText = `
-        position: absolute;
-        right: 0;
-        top: ${top}px;
-        width: ${Math.max(w, 200)}px;
-        height: ${h}px;
-        opacity: 1;
-        pointer-events: none;
-        z-index: 0;
-        object-fit: fill;
-        filter: brightness(3) sepia(1) saturate(2) hue-rotate(340deg);
-        transform-origin: center center;
-        transform: scaleX(-1);
-      `;
+      // User bubble left -> agent avatar (right side)
+      // Curve starts from RIGHT edge, ends at agent avatar (left area)
+      sx = W;
+      gradId = 'g' + i;
+      x1g = '100%'; y1g = '0%'; x2g = '0%'; y2g = '100%';
     } else {
-      // Agent bubble (right) -> next is user (left)
-      // Vector: starts bottom-left at user bubble area, horizontal end at right
-      // We use as-is: left:0, width covers from left edge to user bubble right
-      const w = toRect.right - tlRect.left + 40;
-      img.style.cssText = `
-        position: absolute;
-        left: 0;
-        top: ${top}px;
-        width: ${Math.max(w, 200)}px;
-        height: ${h}px;
-        opacity: 1;
-        pointer-events: none;
-        z-index: 0;
-        object-fit: fill;
-        filter: brightness(3) sepia(1) saturate(2) hue-rotate(340deg);
-      `;
+      // Agent bubble right -> user bubble (left area)
+      sx = 0;
+      gradId = 'g' + i;
+      x1g = '0%'; y1g = '0%'; x2g = '100%'; y2g = '100%';
     }
 
-    timeline.appendChild(img);
+    // Bezier: start horizontal then curve down to end point
+    // Control point 1: same x as start, curve starts horizontal
+    const cp1x = sx + (fromSide === 'left' ? -W * 0.4 : W * 0.4);
+    const cp1y = sy;
+    // Control point 2: same x as end, curve arrives vertical
+    const cp2x = ex;
+    const cp2y = ey - (ey - sy) * 0.3;
+
+    // Gradient: white 0% opacity at start, white 100% at end
+    const grad = document.createElementNS('http://www.w3.org/2000/svg','linearGradient');
+    grad.setAttribute('id', gradId);
+    grad.setAttribute('x1', x1g);
+    grad.setAttribute('y1', y1g);
+    grad.setAttribute('x2', x2g);
+    grad.setAttribute('y2', y2g);
+    grad.setAttribute('gradientUnits', 'objectBoundingBox');
+
+    const stop1 = document.createElementNS('http://www.w3.org/2000/svg','stop');
+    stop1.setAttribute('offset', '0%');
+    stop1.setAttribute('stop-color', 'white');
+    stop1.setAttribute('stop-opacity', '0');
+
+    const stop2 = document.createElementNS('http://www.w3.org/2000/svg','stop');
+    stop2.setAttribute('offset', '100%');
+    stop2.setAttribute('stop-color', 'white');
+    stop2.setAttribute('stop-opacity', '1');
+
+    grad.appendChild(stop1);
+    grad.appendChild(stop2);
+    defs.appendChild(grad);
+
+    const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('d', `M ${sx} ${sy} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${ex} ${ey}`);
+    path.setAttribute('stroke', `url(#${gradId})`);
+    path.setAttribute('stroke-width', '1.5');
+    path.setAttribute('fill', 'none');
+    path.setAttribute('stroke-linecap', 'round');
+    svgEl.appendChild(path);
   }
 }
 
