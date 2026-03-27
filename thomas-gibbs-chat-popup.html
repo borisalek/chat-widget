@@ -364,7 +364,7 @@
     background: #1a1a1a;
   }
 
-  .send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
 
 
 
@@ -404,7 +404,7 @@
     <div class="input-bar" id="inputBar">
       <span class="placeholder-text">YOUR QUESTION...</span>
       <textarea id="textarea" rows="1" placeholder="YOUR QUESTION..."></textarea>
-      <button class="send-btn" id="sendBtn" disabled>
+      <button class="send-btn" id="sendBtn">
         <img src="https://raw.githubusercontent.com/borisalek/chat-widget/dac2e6d133235f09105d4130f9fccd1fbc451e6c/send2.svg" alt="send" style="width:65px;height:65px;display:block;">
       </button>
     </div>
@@ -503,7 +503,7 @@ textarea.addEventListener('blur', () => {
 textarea.addEventListener('input', () => {
   textarea.style.height = 'auto';
   textarea.style.height = Math.min(textarea.scrollHeight, 100) + 'px';
-  sendBtn.disabled = !textarea.value.trim();
+
 });
 
 textarea.addEventListener('keydown', e => {
@@ -518,7 +518,7 @@ async function submit() {
 
   textarea.value = '';
   textarea.style.height = 'auto';
-  sendBtn.disabled = true;
+
   textarea.disabled = true;
   inputBar.classList.remove('active');
 
@@ -546,7 +546,7 @@ async function submit() {
   setTimeout(() => { scrollArea.scrollTop = scrollArea.scrollHeight; }, 60);
 
   textarea.disabled = false;
-  sendBtn.disabled = false;
+
   textarea.focus();
   inputBar.classList.add('active');
 }
