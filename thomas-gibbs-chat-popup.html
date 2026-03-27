@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Thomas Gibbs Chat</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --orange: #c94f0c;
+    --orange-light: #e06030;
+    --orange-glow: rgba(201,79,12,0.35);
+    --orange-border: rgba(201,79,12,0.6);
+    --bg: #0a0a0a;
+    --bg-bubble-left: #3d1a08;
+    --bg-bubble-right: #161616;
+    --text: #e8e0d8;
+    --text-dim: #8a7a70;
+    --popup-w: 860px;
+    --popup-h: 620px;
+  }
+
+  body {
+    background: #1a1a1a;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  /* ── POPUP WRAPPER ── */
+  .chat-popup {
+    position: fixed;
+    bottom: 90px;
+    right: 24px;
+    width: var(--popup-w);
+    height: var(--popup-h);
+    background: var(--bg);
+    border: 1px solid var(--orange-border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 9999;
+    box-shadow: 0 0 60px rgba(201,79,12,0.15), 0 0 0 1px rgba(201,79,12,0.08);
+
+    /* Entry animation */
+    opacity: 0;
+    transform: translateY(20px) scale(0.98);
+    pointer-events: none;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+  .chat-popup.open {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: all;
+  }
+
+  /* Orange accent bars - right edge (from screenshot) */
+  .chat-popup::before {
+    content: '';
+    position: absolute;
+    top: 0; right: 0;
+    width: 4px;
+    height: 100%;
+    background: var(--orange);
+    z-index: 10;
+  }
+
+  /* ── CLOSE BUTTON ── */
+  .close-btn {
+    position: absolute;
+    top: 16px;
+    right: 20px;
+    width: 36px;
+    height: 36px;
+    background: transparent;
+    border: 1px solid var(--orange-border);
+    color: var(--text);
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 20;
+    transition: background 0.2s, color 0.2s;
+    font-family: 'DM Sans', sans-serif;
+    letter-spacing: 0;
+  }
+  .close-btn:hover {
+    background: var(--orange);
+    border-color: var(--orange);
+  }
+  .close-btn svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  /* ── SCROLL AREA ── */
+  .scroll-area {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 40px 40px 20px 40px;
+    scrollbar-width: none;
+    position: relative;
+  }
+  .scroll-area::-webkit-scrollbar { display: none; }
+
+  /* ── TIMELINE ── */
+  .timeline { position: relative; }
+
+  .curves-svg {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    pointer-events: none;
+    overflow: visible;
+    z-index: 0;
+  }
+
+  /* ── MESSAGE ROW ── */
+  .msg-row {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 32px;
+    position: relative;
+    z-index: 1;
+  }
+  .msg-row.left  { justify-content: flex-start; padding-right: 60px; }
+  .msg-row.right { justify-content: flex-end;  padding-left: 60px; }
+
+  /* ── BUBBLE ── */
+  .bubble {
+    width: 80%;
+    padding: 18px 22px;
+    position: relative;
+  }
+  .msg-row.left .bubble {
+    background: var(--bg-bubble-left);
+    border-left: 3px solid var(--orange);
+  }
+  .msg-row.right .bubble {
+    background: var(--bg-bubble-right);
+    border-right: 3px solid var(--orange);
+  }
+
+  /* Vertical accent bar on sides (from screenshot) */
+  .msg-row.left .bubble::after {
+    content: '';
+    position: absolute;
+    right: -3px; top: 20%; bottom: 20%;
+    width: 2px;
+    background: var(--orange);
+    opacity: 0.5;
+  }
+  .msg-row.right .bubble::after {
+    content: '';
+    position: absolute;
+    left: -3px; top: 20%; bottom: 20%;
+    width: 2px;
+    background: var(--orange);
+    opacity: 0.5;
+  }
+
+  .bubble p {
+    font-size: 13px;
+    line-height: 1.75;
+    color: var(--text);
+    font-weight: 300;
+  }
+
+  /* ── ASTERISK ── */
+  .asterisk {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 28px;
+    height: 28px;
+    background: var(--bg);
+    border: 1px solid var(--orange-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    color: var(--orange);
+    line-height: 1;
+    pointer-events: none;
+    font-family: 'Bebas Neue', sans-serif;
+    z-index: 2;
+  }
+  .msg-row.left .asterisk  { right: -38px; }
+  .msg-row.right .asterisk { left: -38px; }
+
+  /* ── AVATAR ── */
+  .avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 2px;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: #1a1a1a;
+    margin-top: 2px;
+    position: absolute;
+  }
+  .msg-row.left .avatar {
+    left: 60px;
+    top: -18px;
+    /* avatar sits above the bubble, like in screenshot */
+    transform: none;
+  }
+  .msg-row.right .avatar {
+    left: 60px;
+    top: -18px;
+  }
+
+  /* Actually avatar is positioned top-left of right bubbles per screenshot */
+  .msg-row.right {
+    position: relative;
+  }
+  .msg-row.right .avatar {
+    position: absolute;
+    left: 60px;
+    top: -18px;
+  }
+
+  .avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .avatar-initials {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, var(--orange) 0%, #7a2e04 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px;
+    color: #fff;
+    letter-spacing: 0.05em;
+  }
+
+  /* ── TYPING DOTS ── */
+  .typing-dots { display: flex; gap: 5px; padding: 4px 0; align-items: center; }
+  .typing-dots span {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--orange);
+    animation: blink 1.2s infinite;
+  }
+  .typing-dots span:nth-child(2) { animation-delay: .2s; }
+  .typing-dots span:nth-child(3) { animation-delay: .4s; }
+  @keyframes blink {
+    0%,80%,100%{ opacity:.2; transform:scale(.8); }
+    40%{ opacity:1; transform:scale(1); }
+  }
+
+  /* ── INPUT SECTION ── */
+  .input-section {
+    flex-shrink: 0;
+    padding: 0;
+    background: var(--bg);
+    position: relative;
+  }
+
+  /* Orange glow at bottom like screenshot */
+  .input-section::before {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 80px;
+    background: radial-gradient(ellipse at 50% 100%, rgba(201,79,12,0.25) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .input-bar {
+    border-top: 1px solid rgba(201,79,12,0.4);
+    background: rgba(201,79,12,0.06);
+    display: flex;
+    align-items: center;
+    padding: 0 0 0 24px;
+    cursor: text;
+    min-height: 64px;
+    position: relative;
+    z-index: 1;
+    transition: background 0.3s;
+  }
+  .input-bar.active {
+    background: rgba(201,79,12,0.1);
+    box-shadow: inset 0 1px 0 rgba(201,79,12,0.3);
+  }
+
+  .placeholder-text {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px;
+    letter-spacing: 0.16em;
+    color: rgba(201,79,12,0.6);
+    flex: 1;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .input-bar textarea {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    resize: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: var(--text);
+    max-height: 100px;
+    line-height: 1.5;
+    display: none;
+    padding: 4px 0;
+  }
+  .input-bar.active textarea { display: block; }
+  .input-bar.active .placeholder-text { display: none; }
+
+  /* ── SEND BUTTON ── */
+  .send-btn {
+    width: 64px;
+    height: 64px;
+    background: #1a1a1a;
+    border: none;
+    border-left: 1px solid rgba(201,79,12,0.4);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.2s;
+    position: relative;
+  }
+  .send-btn:hover { background: var(--orange); }
+  .send-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .send-btn:disabled:hover { background: #1a1a1a; }
+
+  /* Arrow icon in send button - matches screenshot style */
+  .send-btn svg {
+    width: 20px;
+    height: 20px;
+    transform: rotate(-45deg);
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 900px) {
+    .chat-popup {
+      width: calc(100vw - 16px);
+      right: 8px;
+      bottom: 80px;
+      height: 70vh;
+    }
+  }
+  @media (max-width: 480px) {
+    .scroll-area { padding: 28px 16px 16px; }
+    .bubble { width: 88%; padding: 12px 14px; }
+    .bubble p { font-size: 12.5px; }
+    .msg-row.left  { padding-right: 0; }
+    .msg-row.right { padding-left: 40px; }
+    .asterisk { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- CHAT POPUP -->
+<div class="chat-popup" id="chatPopup">
+
+  <!-- Close button -->
+  <button class="close-btn" id="closeBtn" aria-label="Close">
+    <svg viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M1 1l12 12M13 1L1 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+  </button>
+
+  <!-- Scroll area -->
+  <div class="scroll-area" id="scrollArea">
+    <div class="timeline" id="timeline">
+      <svg class="curves-svg" id="curvesSvg"></svg>
+    </div>
+  </div>
+
+  <!-- Input -->
+  <div class="input-section">
+    <div class="input-bar" id="inputBar">
+      <span class="placeholder-text">YOUR QUESTION...</span>
+      <textarea id="textarea" rows="1" placeholder="Type your question..."></textarea>
+      <button class="send-btn" id="sendBtn" disabled>
+        <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4 16L16 4M16 4H6M16 4V14" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const WEBHOOK_URL = 'https://nonpatented-enchantedly-reyes.ngrok-free.dev/webhook/f406671e-c954-4691-b39a-66c90aa2f103/chat';
+const ROUTE       = 'general';
+const AGENT_AVATAR = '';
+
+const INITIAL = [
+  {
+    side: 'right',
+    text: 'Proactively conceptualize user-centric bandwidth via seamless infrastructures. Conveniently.'
+  },
+  {
+    side: 'left',
+    text: 'Completely transition an expanded array of e-commerce rather than proactive supply chains. Rapidiously deploy premier imperatives for cross-unit bandwidth. Authoritatively integrate multimedia based leadership after economically sound deliverables. Distinctively recaptiualize process-centric leadership before team building data.<br><br>Rapidiously leverage other\'s 2.0 content whereas interactive technology. Conveniently visualize frictionless human capital whereas bricks-and-clicks applications. Proactively engage compelling schemas for.'
+  },
+  {
+    side: 'right',
+    text: 'Completely transition an expanded array of e-commerce rather than proactive supply chains. Rapidiously deploy premier imperatives for cross-unit bandwidth. Authoritatively integrate multimedia based leadership after economically sound deliverables. Distinctively recaptiualize process-centric leadership before team building data.<br><br>Rapidiously leverage other\'s 2.0 content whereas interactive technology. Conveniently visualize frictionless human capital whereas bricks-and-clicks applications. Proactively engage compelling schemas for.'
+  },
+];
+
+// Elements
+const popup      = document.getElementById('chatPopup');
+const closeBtn   = document.getElementById('closeBtn');
+const timeline   = document.getElementById('timeline');
+const svg        = document.getElementById('curvesSvg');
+const scrollArea = document.getElementById('scrollArea');
+const inputBar   = document.getElementById('inputBar');
+const textarea   = document.getElementById('textarea');
+const sendBtn    = document.getElementById('sendBtn');
+const sessionId  = crypto.randomUUID();
+
+let initialized  = false;
+
+// ── Open / Close ──
+function openPopup() {
+  popup.classList.add('open');
+  if (!initialized) {
+    initialized = true;
+    INITIAL.forEach(m => addMsg(m.text, m.side));
+    setTimeout(() => { scrollArea.scrollTop = scrollArea.scrollHeight; }, 100);
+  }
+}
+
+function closePopup() {
+  popup.classList.remove('open');
+}
+
+closeBtn.addEventListener('click', closePopup);
+
+// Close on ESC
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closePopup(); });
+
+// ── Add message ──
+function addMsg(text, side, typing = false) {
+  const row = document.createElement('div');
+  row.className = `msg-row ${side}`;
+  row.dataset.side = side;
+
+  // Avatar only on right (Thomas / agent) messages
+  if (side === 'right') {
+    const av = document.createElement('div');
+    av.className = 'avatar';
+    av.innerHTML = AGENT_AVATAR
+      ? `<img src="${AGENT_AVATAR}" alt="Thomas Gibbs">`
+      : `<div class="avatar-initials">T</div>`;
+    row.appendChild(av);
+  }
+
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  bubble.innerHTML = typing
+    ? `<div class="typing-dots"><span></span><span></span><span></span></div>`
+    : `<p>${text}</p>`;
+
+  const ast = document.createElement('span');
+  ast.className = 'asterisk';
+  ast.textContent = '*';
+  bubble.appendChild(ast);
+
+  row.appendChild(bubble);
+  timeline.appendChild(row);
+
+  setTimeout(() => { scrollArea.scrollTop = scrollArea.scrollHeight; }, 60);
+  requestAnimationFrame(() => requestAnimationFrame(drawCurves));
+  return { row, bubble };
+}
+
+// ── Draw curves ──
+function drawCurves() {
+  const rows = Array.from(timeline.querySelectorAll('.msg-row'));
+  svg.innerHTML = '';
+  const tlRect = timeline.getBoundingClientRect();
+
+  for (let i = 0; i < rows.length - 1; i++) {
+    const from     = rows[i];
+    const to       = rows[i + 1];
+    const fromAst  = from.querySelector('.asterisk');
+    const toBubble = to.querySelector('.bubble');
+    if (!fromAst || !toBubble) continue;
+
+    const astRect  = fromAst.getBoundingClientRect();
+    const toRect   = toBubble.getBoundingClientRect();
+    const fromSide = from.dataset.side;
+
+    const x1 = astRect.left + astRect.width  / 2 - tlRect.left;
+    const y1 = astRect.top  + astRect.height / 2 - tlRect.top;
+    const x2 = fromSide === 'left'
+      ? toRect.right - tlRect.left
+      : toRect.left  - tlRect.left;
+    const y2 = toRect.top + toRect.height / 2 - tlRect.top;
+
+    const push = fromSide === 'left' ? 80 : -80;
+    const cx1  = x1 + push;
+    const cx2  = x2 + (fromSide === 'left' ? 60 : -60);
+
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', `M ${x1} ${y1} C ${cx1} ${y1}, ${cx2} ${y2}, ${x2} ${y2}`);
+    path.setAttribute('stroke', 'rgba(160,80,20,0.45)');
+    path.setAttribute('stroke-width', '1.5');
+    path.setAttribute('fill', 'none');
+    svg.appendChild(path);
+  }
+}
+
+// ── Input logic ──
+inputBar.addEventListener('click', () => {
+  inputBar.classList.add('active');
+  textarea.focus();
+});
+
+textarea.addEventListener('blur', () => {
+  if (!textarea.value.trim()) inputBar.classList.remove('active');
+});
+
+textarea.addEventListener('input', () => {
+  textarea.style.height = 'auto';
+  textarea.style.height = Math.min(textarea.scrollHeight, 100) + 'px';
+  sendBtn.disabled = !textarea.value.trim();
+});
+
+textarea.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); }
+});
+sendBtn.addEventListener('click', submit);
+
+// ── Submit ──
+async function submit() {
+  const msg = textarea.value.trim();
+  if (!msg) return;
+
+  textarea.value = '';
+  textarea.style.height = 'auto';
+  sendBtn.disabled = true;
+  textarea.disabled = true;
+  inputBar.classList.remove('active');
+
+  addMsg(msg, 'left');
+  const { bubble: typingBubble } = addMsg('', 'right', true);
+
+  try {
+    const res  = await fetch(WEBHOOK_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({ chatInput: msg, sessionId, route: ROUTE })
+    });
+    const data = await res.json();
+    typingBubble.innerHTML = `<p>${data.output || "Sorry, I couldn't process that."}</p>`;
+  } catch {
+    typingBubble.innerHTML = `<p style="color:var(--text-dim)">Connection error. Please try again.</p>`;
+  }
+
+  // Re-add asterisk after replacing innerHTML
+  const ast = document.createElement('span');
+  ast.className = 'asterisk';
+  ast.textContent = '*';
+  typingBubble.appendChild(ast);
+
+  requestAnimationFrame(() => requestAnimationFrame(drawCurves));
+  setTimeout(() => { scrollArea.scrollTop = scrollArea.scrollHeight; }, 60);
+
+  textarea.disabled = false;
+  sendBtn.disabled = false;
+  textarea.focus();
+  inputBar.classList.add('active');
+}
+
+// ── Redraw on resize/scroll ──
+window.addEventListener('resize', drawCurves);
+scrollArea.addEventListener('scroll', drawCurves);
+
+// ── Expose open/close globally for Framer ──
+window.openThomasChat  = openPopup;
+window.closeThomasChat = closePopup;
+</script>
+</body>
+</html>
