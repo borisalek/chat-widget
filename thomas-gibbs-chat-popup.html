@@ -6,6 +6,13 @@
 <title>Thomas Gibbs Chat</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
 <style>
+  @font-face {
+    font-family: 'Aeonik';
+    src: url('https://raw.githubusercontent.com/borisalek/chat-widget/main/Aeonik-Regular.woff2') format('woff2');
+    font-weight: 400;
+  }
+</style>
+<style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
@@ -24,7 +31,7 @@
 
   body {
     background: #1a1a1a;
-    font-family: 'DM Sans', sans-serif;
+    font-family: 'Aeonik', 'DM Sans', sans-serif;
   }
 
   /* ── POPUP WRAPPER ── */
@@ -72,7 +79,7 @@
     justify-content: center;
     z-index: 20;
     transition: background 0.2s, color 0.2s;
-    font-family: 'DM Sans', sans-serif;
+    font-family: 'Aeonik', 'DM Sans', sans-serif;
     letter-spacing: 0;
   }
   .close-btn:hover {
@@ -98,14 +105,7 @@
   /* ── TIMELINE ── */
   .timeline { position: relative; }
 
-  .curves-svg {
-    position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    pointer-events: none;
-    overflow: visible;
-    z-index: 0;
-  }
+
 
   /* ── MESSAGE ROW ── */
   .msg-row {
@@ -191,6 +191,17 @@
   }
   .msg-row.left .asterisk  { right: -38px; }
   .msg-row.right .asterisk { left: -38px; }
+
+  /* User avatar on left messages - right side */
+  .user-avatar {
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 48px;
+    height: 48px;
+    background: transparent !important;
+  }
 
   /* ── AVATAR ── */
   .avatar {
@@ -306,7 +317,7 @@
     border: none;
     outline: none;
     resize: none;
-    font-family: 'DM Sans', sans-serif;
+    font-family: 'Aeonik', 'DM Sans', sans-serif;
     font-size: 14px;
     color: #3B1C07;
     position: relative;
@@ -318,6 +329,7 @@
   }
   .input-bar.active textarea { display: block; }
   .input-bar.active .placeholder-text { display: none; }
+  .input-bar textarea::placeholder { color: #3B1C07; opacity: 1; font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 0.16em; }
 
   /* ── SEND BUTTON ── */
   .send-btn {
@@ -371,7 +383,7 @@
   <!-- Scroll area -->
   <div class="scroll-area" id="scrollArea">
     <div class="timeline" id="timeline">
-      <svg class="curves-svg" id="curvesSvg"></svg>
+      <div id="curvesSvg"></div>
     </div>
   </div>
 
@@ -379,9 +391,9 @@
   <div class="input-section">
     <div class="input-bar" id="inputBar">
       <span class="placeholder-text">YOUR QUESTION...</span>
-      <textarea id="textarea" rows="1" placeholder="Type your question..."></textarea>
+      <textarea id="textarea" rows="1" placeholder="YOUR QUESTION..."></textarea>
       <button class="send-btn" id="sendBtn" disabled>
-        <img src="https://raw.githubusercontent.com/borisalek/chat-widget/refs/heads/main/send.png" alt="send" style="width:65px;height:65px;object-fit:cover;display:block;">
+        <img src="https://raw.githubusercontent.com/borisalek/chat-widget/dac2e6d133235f09105d4130f9fccd1fbc451e6c/send2.svg" alt="send" style="width:65px;height:65px;object-fit:contain;display:block;">
       </button>
     </div>
   </div>
@@ -392,6 +404,7 @@
 const WEBHOOK_URL = 'https://nonpatented-enchantedly-reyes.ngrok-free.dev/webhook/f406671e-c954-4691-b39a-66c90aa2f103/chat';
 const ROUTE       = 'general';
 const AGENT_AVATAR = 'https://raw.githubusercontent.com/borisalek/chat-widget/main/Chat-icon.png';
+const USER_AVATAR = 'https://raw.githubusercontent.com/borisalek/chat-widget/refs/heads/main/user.png';
 
 const INITIAL = [
   {
@@ -432,13 +445,19 @@ function addMsg(text, side, typing = false) {
   row.className = `msg-row ${side}`;
   row.dataset.side = side;
 
-  // Avatar only on right (Thomas / agent) messages
+  // Avatar on both sides
   if (side === 'right') {
     const av = document.createElement('div');
     av.className = 'avatar';
     av.innerHTML = AGENT_AVATAR
       ? `<img src="${AGENT_AVATAR}" alt="Thomas Gibbs">`
       : `<div class="avatar-initials">T</div>`;
+    row.appendChild(av);
+  }
+  if (side === 'left') {
+    const av = document.createElement('div');
+    av.className = 'avatar user-avatar';
+    av.innerHTML = `<img src="${USER_AVATAR}" alt="User">`;
     row.appendChild(av);
   }
 
@@ -463,40 +482,61 @@ function addMsg(text, side, typing = false) {
   return { row, bubble };
 }
 
-// ── Draw curves ──
+// ── Draw curves using Vector4.png ──
+const CURVE_IMG = 'https://raw.githubusercontent.com/borisalek/chat-widget/refs/heads/main/Vector%204.png';
+
 function drawCurves() {
   const rows = Array.from(timeline.querySelectorAll('.msg-row'));
   svg.innerHTML = '';
   const tlRect = timeline.getBoundingClientRect();
 
+  // Remove old curve imgs
+  timeline.querySelectorAll('.curve-img').forEach(el => el.remove());
+
   for (let i = 0; i < rows.length - 1; i++) {
     const from     = rows[i];
     const to       = rows[i + 1];
-    const fromAst  = from.querySelector('.asterisk');
-    const toBubble = to.querySelector('.bubble');
-    if (!fromAst || !toBubble) continue;
+    const fromBubble = from.querySelector('.bubble');
+    const toBubble   = to.querySelector('.bubble');
+    if (!fromBubble || !toBubble) continue;
 
-    const astRect  = fromAst.getBoundingClientRect();
+    const fromRect = fromBubble.getBoundingClientRect();
     const toRect   = toBubble.getBoundingClientRect();
     const fromSide = from.dataset.side;
+    const toSide   = to.dataset.side;
 
-    const x1 = astRect.left + astRect.width  / 2 - tlRect.left;
-    const y1 = astRect.top  + astRect.height / 2 - tlRect.top;
-    const x2 = fromSide === 'left'
-      ? toRect.right - tlRect.left
-      : toRect.left  - tlRect.left;
-    const y2 = toRect.top + toRect.height / 2 - tlRect.top;
+    const img = document.createElement('img');
+    img.className = 'curve-img';
+    img.src = CURVE_IMG;
 
-    const push = fromSide === 'left' ? 80 : -80;
-    const cx1  = x1 + push;
-    const cx2  = x2 + (fromSide === 'left' ? 60 : -60);
+    // Start: right edge of left bubble OR left edge of right bubble
+    // End: opposite bubble
+    const startX = fromSide === 'left'
+      ? fromRect.right - tlRect.left
+      : fromRect.left - tlRect.left;
+    const startY = fromRect.bottom - tlRect.top;
+    const endX   = toSide === 'left'
+      ? toRect.left - tlRect.left
+      : toRect.right - tlRect.left;
+    const endY   = toRect.top - tlRect.top;
 
-    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    path.setAttribute('d', `M ${x1} ${y1} C ${cx1} ${y1}, ${cx2} ${y2}, ${x2} ${y2}`);
-    path.setAttribute('stroke', 'rgba(160,80,20,0.45)');
-    path.setAttribute('stroke-width', '1.5');
-    path.setAttribute('fill', 'none');
-    svg.appendChild(path);
+    const width  = Math.abs(endX - startX);
+    const height = Math.abs(endY - startY);
+
+    img.style.cssText = `
+      position: absolute;
+      left: ${Math.min(startX, endX)}px;
+      top: ${startY}px;
+      width: ${Math.max(width, 80)}px;
+      height: ${Math.max(height, 40)}px;
+      opacity: 0.6;
+      pointer-events: none;
+      z-index: 0;
+      object-fit: fill;
+      ${fromSide === 'right' ? 'transform: scaleX(-1);' : ''}
+    `;
+
+    timeline.appendChild(img);
   }
 }
 
