@@ -175,8 +175,8 @@
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
-    width: 36px;
-    height: 36px;
+    width: 48px;
+    height: 48px;
     background: none;
     border: none;
     pointer-events: none;
@@ -186,12 +186,12 @@
     justify-content: center;
   }
   .asterisk img {
-    width: 36px;
-    height: 36px;
+    width: 48px;
+    height: 48px;
     object-fit: contain;
   }
-  .msg-row.left .asterisk  { right: -46px; }
-  .msg-row.right .asterisk { left: -46px; }
+  .msg-row.left .asterisk  { right: -58px; }
+  .msg-row.right .asterisk { left: -58px; }
 
 
   /* ── AVATAR ── */
@@ -511,10 +511,11 @@ function drawCurves() {
         top: ${top}px;
         width: ${Math.max(w, 200)}px;
         height: ${h}px;
-        opacity: 0.8;
+        opacity: 1;
         pointer-events: none;
         z-index: 0;
         object-fit: fill;
+        filter: brightness(3) sepia(1) saturate(2) hue-rotate(340deg);
         transform-origin: center center;
         transform: scaleX(-1);
       `;
@@ -529,10 +530,11 @@ function drawCurves() {
         top: ${top}px;
         width: ${Math.max(w, 200)}px;
         height: ${h}px;
-        opacity: 0.8;
+        opacity: 1;
         pointer-events: none;
         z-index: 0;
         object-fit: fill;
+        filter: brightness(3) sepia(1) saturate(2) hue-rotate(340deg);
       `;
     }
 
