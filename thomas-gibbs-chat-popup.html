@@ -189,17 +189,16 @@
     flex-shrink: 0;
     background: #1a1a1a;
     position: absolute;
-    top: -20px;
-    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
     z-index: 3;
   }
   .msg-row.right {
     position: relative;
-    padding-top: 24px;
   }
   .msg-row.right .avatar {
-    left: 60px;
-    top: 0px;
+    right: -62px;
+    left: auto;
   }
 
   .avatar img { width: 100%; height: 100%; object-fit: cover; }
@@ -425,10 +424,12 @@ function addMsg(text, side, typing = false) {
     ? `<div class="typing-dots"><span></span><span></span><span></span></div>`
     : `<p>${text}</p>`;
 
-  const ast = document.createElement('span');
-  ast.className = 'asterisk';
-  ast.textContent = '*';
-  bubble.appendChild(ast);
+  if (side === 'left') {
+    const ast = document.createElement('span');
+    ast.className = 'asterisk';
+    ast.textContent = '*';
+    bubble.appendChild(ast);
+  }
 
   row.appendChild(bubble);
   timeline.appendChild(row);
@@ -525,11 +526,7 @@ async function submit() {
     typingBubble.innerHTML = `<p style="color:var(--text-dim)">Connection error. Please try again.</p>`;
   }
 
-  // Re-add asterisk after replacing innerHTML
-  const ast = document.createElement('span');
-  ast.className = 'asterisk';
-  ast.textContent = '*';
-  typingBubble.appendChild(ast);
+  // No asterisk on right (agent) bubbles - avatar is used instead
 
   requestAnimationFrame(() => requestAnimationFrame(drawCurves));
   setTimeout(() => { scrollArea.scrollTop = scrollArea.scrollHeight; }, 60);
