@@ -175,22 +175,23 @@
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
-    width: 28px;
-    height: 28px;
-    background: var(--bg);
-    border: 1px solid var(--orange-border);
+    width: 36px;
+    height: 36px;
+    background: none;
+    border: none;
+    pointer-events: none;
+    z-index: 2;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 14px;
-    color: var(--orange);
-    line-height: 1;
-    pointer-events: none;
-    font-family: 'Bebas Neue', sans-serif;
-    z-index: 2;
   }
-  .msg-row.left .asterisk  { right: -38px; }
-  .msg-row.right .asterisk { left: -38px; }
+  .asterisk img {
+    width: 36px;
+    height: 36px;
+    object-fit: contain;
+  }
+  .msg-row.left .asterisk  { right: -46px; }
+  .msg-row.right .asterisk { left: -46px; }
 
 
   /* ── AVATAR ── */
@@ -454,7 +455,7 @@ function addMsg(text, side, typing = false) {
   if (side === 'left') {
     const ast = document.createElement('span');
     ast.className = 'asterisk';
-    ast.textContent = '*';
+    ast.innerHTML = '<img src="https://raw.githubusercontent.com/borisalek/chat-widget/refs/heads/main/user.png" alt="">';
     bubble.appendChild(ast);
   }
 
@@ -479,7 +480,6 @@ function drawCurves() {
     const from     = rows[i];
     const to       = rows[i + 1];
     const fromSide = from.dataset.side;
-    const toSide   = to.dataset.side;
 
     const fromBubble = from.querySelector('.bubble');
     const toTarget   = to.querySelector('.avatar') || to.querySelector('.bubble');
@@ -488,43 +488,48 @@ function drawCurves() {
     const fromRect = fromBubble.getBoundingClientRect();
     const toRect   = toTarget.getBoundingClientRect();
 
+    // top = bottom of current bubble
+    // bottom = vertical center of next avatar
+    const top    = fromRect.bottom - tlRect.top;
+    const bottom = toRect.top - tlRect.top + toRect.height / 2;
+    const h      = Math.max(bottom - top, 60);
+
     const img = document.createElement('img');
     img.className = 'curve-img';
     img.src = CURVE_IMG_URL;
 
     if (fromSide === 'left') {
-      // User bubble on left -> curve from RIGHT edge of widget down-left to agent avatar
-      const top    = fromRect.bottom - tlRect.top;
-      const bottom = toRect.top - tlRect.top + toRect.height / 2;
-      const h      = Math.max(bottom - top, 40);
-      // right-anchored, full width from avatar to right edge
-      const right  = 0;
-      const w      = tlRect.width - (toRect.left - tlRect.left);
+      // User bubble (left) -> next is agent (right)
+      // Vector: bottom-left starts at avatar center, horizontal end goes to right wall
+      // We mirror it: right wall -> curves down-left to agent avatar
+      // Anchor right:0, top at fromRect.bottom
+      // Width = full width minus avatar left position
+      const w = tlRect.width - (toRect.left - tlRect.left);
       img.style.cssText = `
         position: absolute;
         right: 0;
         top: ${top}px;
-        width: ${Math.max(w, 100)}px;
+        width: ${Math.max(w, 200)}px;
         height: ${h}px;
-        opacity: 0.7;
+        opacity: 0.8;
         pointer-events: none;
         z-index: 0;
         object-fit: fill;
+        transform-origin: center center;
         transform: scaleX(-1);
       `;
     } else {
-      // Agent bubble on right -> curve from LEFT edge of widget down-right to user bubble
-      const top    = fromRect.bottom - tlRect.top;
-      const bottom = toRect.top - tlRect.top + toRect.height / 2;
-      const h      = Math.max(bottom - top, 40);
-      const w      = toRect.right - tlRect.left;
+      // Agent bubble (right) -> next is user (left)
+      // Vector: starts bottom-left at user bubble area, horizontal end at right
+      // We use as-is: left:0, width covers from left edge to user bubble right
+      const w = toRect.right - tlRect.left + 40;
       img.style.cssText = `
         position: absolute;
         left: 0;
         top: ${top}px;
-        width: ${Math.max(w, 100)}px;
+        width: ${Math.max(w, 200)}px;
         height: ${h}px;
-        opacity: 0.7;
+        opacity: 0.8;
         pointer-events: none;
         z-index: 0;
         object-fit: fill;
