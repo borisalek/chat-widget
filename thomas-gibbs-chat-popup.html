@@ -499,44 +499,32 @@ function drawCurves() {
     const fromRect = fromBubble.getBoundingClientRect();
     const toRect   = toTarget.getBoundingClientRect();
 
-    // End point: center of avatar/bubble of next message
+    // End point: center of avatar of next message
     const ex = toRect.left + toRect.width / 2 - tlRect.left;
     const ey = toRect.top  + toRect.height / 2 - tlRect.top;
 
-    // Start point: widget edge, vertically at bottom of current bubble
-    const sy = fromRect.bottom - tlRect.top;
+    // Start: widget edge at vertical midpoint between bubbles
+    const sy = fromRect.bottom - tlRect.top + 10;
+    const sx = fromSide === 'left' ? W : 0;
 
-    let sx, gradId, x1g, y1g, x2g, y2g;
-
-    if (fromSide === 'left') {
-      // User bubble left -> agent avatar (right side)
-      // Curve starts from RIGHT edge, ends at agent avatar (left area)
-      sx = W;
-      gradId = 'g' + i;
-      x1g = '100%'; y1g = '0%'; x2g = '0%'; y2g = '100%';
-    } else {
-      // Agent bubble right -> user bubble (left area)
-      sx = 0;
-      gradId = 'g' + i;
-      x1g = '0%'; y1g = '0%'; x2g = '100%'; y2g = '100%';
-    }
-
-    // Bezier: start horizontal then curve down to end point
-    // Control point 1: same x as start, curve starts horizontal
-    const cp1x = sx + (fromSide === 'left' ? -W * 0.4 : W * 0.4);
+    // Cubic bezier matching Vector4 shape:
+    // - starts horizontal from edge
+    // - curves diagonally down to avatar
+    // cp1: same y as start, pulled inward
+    const cp1x = fromSide === 'left' ? W * 0.55 : W * 0.45;
     const cp1y = sy;
-    // Control point 2: same x as end, curve arrives vertical
+    // cp2: same x as end point, above end
     const cp2x = ex;
-    const cp2y = ey - (ey - sy) * 0.3;
+    const cp2y = sy + (ey - sy) * 0.5;
 
-    // Gradient: white 0% opacity at start, white 100% at end
+    const gradId = 'g' + i;
     const grad = document.createElementNS('http://www.w3.org/2000/svg','linearGradient');
     grad.setAttribute('id', gradId);
-    grad.setAttribute('x1', x1g);
-    grad.setAttribute('y1', y1g);
-    grad.setAttribute('x2', x2g);
-    grad.setAttribute('y2', y2g);
-    grad.setAttribute('gradientUnits', 'objectBoundingBox');
+    grad.setAttribute('gradientUnits', 'userSpaceOnUse');
+    grad.setAttribute('x1', sx);
+    grad.setAttribute('y1', sy);
+    grad.setAttribute('x2', ex);
+    grad.setAttribute('y2', ey);
 
     const stop1 = document.createElementNS('http://www.w3.org/2000/svg','stop');
     stop1.setAttribute('offset', '0%');
@@ -546,7 +534,7 @@ function drawCurves() {
     const stop2 = document.createElementNS('http://www.w3.org/2000/svg','stop');
     stop2.setAttribute('offset', '100%');
     stop2.setAttribute('stop-color', 'white');
-    stop2.setAttribute('stop-opacity', '1');
+    stop2.setAttribute('stop-opacity', '0.7');
 
     grad.appendChild(stop1);
     grad.appendChild(stop2);
