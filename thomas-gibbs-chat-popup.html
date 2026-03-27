@@ -200,17 +200,19 @@
     overflow: hidden;
     flex-shrink: 0;
     background: #1a1a1a;
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    z-index: 3;
+    align-self: center;
+    order: 0;
+    margin-right: 0;
   }
   .msg-row.right {
     position: relative;
+    gap: 0;
   }
   .msg-row.right .avatar {
-    left: 0px;
-    right: auto;
+    order: 0;
+  }
+  .msg-row.right .bubble {
+    order: 1;
   }
 
   .avatar img { width: 100%; height: 100%; object-fit: cover; }
@@ -262,7 +264,7 @@
 
   .input-bar {
     border: 1px solid rgba(255,76,0,0.5);
-    background: linear-gradient(90deg, #3B1C07 0%, #FF6900 100%);
+    background: #FFBFA4;
     display: flex;
     align-items: center;
     padding: 0 0 0 24px;
@@ -271,20 +273,31 @@
     position: relative;
     z-index: 1;
     transition: background 0.3s;
-    box-shadow: 0 0 40px rgba(255,76,0,0.3), 0 0 80px rgba(255,105,0,0.15);
+    box-shadow: -2px -90px 98px 0px rgba(255,76,0,0.54) inset, 0 0 60px rgba(255,105,0,0.2);
+  }
+  .input-bar::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, #3B1C07 0%, transparent 60%, #FF6900 100%);
+    opacity: 0.35;
+    pointer-events: none;
+    z-index: 0;
   }
   .input-bar.active {
-    box-shadow: 0 0 60px rgba(255,76,0,0.5), 0 0 100px rgba(255,105,0,0.25);
+    box-shadow: -2px -90px 98px 0px rgba(255,76,0,0.7) inset, 0 0 80px rgba(255,105,0,0.3);
   }
 
   .placeholder-text {
     font-family: 'Bebas Neue', sans-serif;
     font-size: 18px;
     letter-spacing: 0.16em;
-    color: #FFBFA4;
+    color: #3B1C07;
     flex: 1;
     pointer-events: none;
     user-select: none;
+    position: relative;
+    z-index: 1;
   }
 
   .input-bar textarea {
@@ -295,7 +308,9 @@
     resize: none;
     font-family: 'DM Sans', sans-serif;
     font-size: 14px;
-    color: #FFBFA4;
+    color: #3B1C07;
+    position: relative;
+    z-index: 1;
     max-height: 100px;
     line-height: 1.5;
     display: none;
@@ -306,8 +321,8 @@
 
   /* ── SEND BUTTON ── */
   .send-btn {
-    width: 64px;
-    height: 64px;
+    width: 65px;
+    height: 65px;
     background: #1a1a1a;
     border: none;
     border-left: 1px solid rgba(201,79,12,0.4);
@@ -327,12 +342,7 @@
   .send-btn:disabled { opacity: 0.35; cursor: not-allowed; }
   .send-btn:disabled:hover { background: #1a1a1a; }
 
-  /* Arrow icon in send button - pointing right */
-  .send-btn svg {
-    width: 20px;
-    height: 20px;
-    transform: rotate(0deg);
-  }
+
 
   /* ── RESPONSIVE ── */
   @media (max-width: 900px) {
@@ -371,9 +381,7 @@
       <span class="placeholder-text">YOUR QUESTION...</span>
       <textarea id="textarea" rows="1" placeholder="Type your question..."></textarea>
       <button class="send-btn" id="sendBtn" disabled>
-        <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M3 10h14M11 4l6 6-6 6" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
+        <img src="https://raw.githubusercontent.com/borisalek/chat-widget/refs/heads/main/send.png" alt="send" style="width:65px;height:65px;object-fit:cover;display:block;">
       </button>
     </div>
   </div>
