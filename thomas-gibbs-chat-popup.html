@@ -328,10 +328,13 @@
     display: none;
     padding: 4px 0;
     overflow: hidden;
+    scrollbar-width: none;
     -webkit-appearance: none;
     appearance: none;
   }
   .input-bar.active textarea { display: block; }
+  .input-bar textarea::-webkit-scrollbar { display: none; }
+  .input-bar textarea::-webkit-resizer { display: none; }
   .input-bar.active .placeholder-text { display: none; }
   .input-bar textarea::placeholder { color: #3B1C07; opacity: 1; font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 0.16em; }
 
@@ -341,22 +344,25 @@
     height: 65px;
     background: #1a1a1a;
     border: none;
-    border-left: 1px solid rgba(201,79,12,0.4);
+    border-left: 2px solid var(--orange);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    transition: background 0.2s, box-shadow 0.2s;
     position: relative;
-    box-shadow: 0 0 20px rgba(255,76,0,0.6), 0 0 40px rgba(255,105,0,0.3), inset 0 0 20px rgba(255,76,0,0.1);
+    box-shadow: 0 0 20px rgba(255,76,0,0.5), inset 0 0 20px rgba(255,76,0,0.08);
+    padding: 0;
+    overflow: hidden;
   }
-  .send-btn:hover {
-    background: var(--orange);
-    box-shadow: 0 0 30px rgba(255,76,0,0.9), 0 0 60px rgba(255,105,0,0.5);
+  .send-btn img {
+    width: 65px;
+    height: 65px;
+    object-fit: cover;
+    display: block;
+    pointer-events: none;
   }
-  .send-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-  .send-btn:disabled:hover { background: #1a1a1a; }
+  .send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 
 
@@ -397,7 +403,7 @@
       <span class="placeholder-text">YOUR QUESTION...</span>
       <textarea id="textarea" rows="1" placeholder="YOUR QUESTION..."></textarea>
       <button class="send-btn" id="sendBtn" disabled>
-        <img src="https://raw.githubusercontent.com/borisalek/chat-widget/dac2e6d133235f09105d4130f9fccd1fbc451e6c/send2.svg" alt="send" style="width:65px;height:65px;object-fit:contain;display:block;">
+        <img src="https://raw.githubusercontent.com/borisalek/chat-widget/dac2e6d133235f09105d4130f9fccd1fbc451e6c/send2.svg" alt="send">
       </button>
     </div>
   </div>
