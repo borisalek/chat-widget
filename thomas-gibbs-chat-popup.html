@@ -323,9 +323,13 @@
     position: relative;
     z-index: 1;
     max-height: 100px;
+    height: 100%;
     line-height: 1.5;
     display: none;
     padding: 4px 0;
+    overflow: hidden;
+    -webkit-appearance: none;
+    appearance: none;
   }
   .input-bar.active textarea { display: block; }
   .input-bar.active .placeholder-text { display: none; }
@@ -476,79 +480,7 @@ function addMsg(text, side, typing = false) {
   return { row, bubble };
 }
 
-// ── Draw curves: SVG bezier from widget edge to avatar ──
-function drawCurves() {
-  const svgEl = document.getElementById('curvesSvg');
-  svgEl.innerHTML = '';
-  const defs = document.createElementNS('http://www.w3.org/2000/svg','defs');
-  svgEl.appendChild(defs);
-
-  const rows = Array.from(timeline.querySelectorAll('.msg-row'));
-  const tlRect = timeline.getBoundingClientRect();
-  const W = tlRect.width;
-
-  for (let i = 0; i < rows.length - 1; i++) {
-    const from     = rows[i];
-    const to       = rows[i + 1];
-    const fromSide = from.dataset.side;
-
-    const fromBubble = from.querySelector('.bubble');
-    const toTarget   = to.querySelector('.avatar') || to.querySelector('.bubble');
-    if (!fromBubble || !toTarget) continue;
-
-    const fromRect = fromBubble.getBoundingClientRect();
-    const toRect   = toTarget.getBoundingClientRect();
-
-    // End point: center of avatar of next message
-    const ex = toRect.left + toRect.width / 2 - tlRect.left;
-    const ey = toRect.top  + toRect.height / 2 - tlRect.top;
-
-    // Start: widget edge at vertical midpoint between bubbles
-    const sy = fromRect.bottom - tlRect.top + 10;
-    const sx = fromSide === 'left' ? W : 0;
-
-    // Cubic bezier matching Vector4 shape:
-    // - starts horizontal from edge
-    // - curves diagonally down to avatar
-    // cp1: same y as start, pulled inward
-    const cp1x = fromSide === 'left' ? W * 0.55 : W * 0.45;
-    const cp1y = sy;
-    // cp2: same x as end point, above end
-    const cp2x = ex;
-    const cp2y = sy + (ey - sy) * 0.5;
-
-    const gradId = 'g' + i;
-    const grad = document.createElementNS('http://www.w3.org/2000/svg','linearGradient');
-    grad.setAttribute('id', gradId);
-    grad.setAttribute('gradientUnits', 'userSpaceOnUse');
-    grad.setAttribute('x1', sx);
-    grad.setAttribute('y1', sy);
-    grad.setAttribute('x2', ex);
-    grad.setAttribute('y2', ey);
-
-    const stop1 = document.createElementNS('http://www.w3.org/2000/svg','stop');
-    stop1.setAttribute('offset', '0%');
-    stop1.setAttribute('stop-color', 'white');
-    stop1.setAttribute('stop-opacity', '0');
-
-    const stop2 = document.createElementNS('http://www.w3.org/2000/svg','stop');
-    stop2.setAttribute('offset', '100%');
-    stop2.setAttribute('stop-color', 'white');
-    stop2.setAttribute('stop-opacity', '0.7');
-
-    grad.appendChild(stop1);
-    grad.appendChild(stop2);
-    defs.appendChild(grad);
-
-    const path = document.createElementNS('http://www.w3.org/2000/svg','path');
-    path.setAttribute('d', `M ${sx} ${sy} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${ex} ${ey}`);
-    path.setAttribute('stroke', `url(#${gradId})`);
-    path.setAttribute('stroke-width', '1.5');
-    path.setAttribute('fill', 'none');
-    path.setAttribute('stroke-linecap', 'round');
-    svgEl.appendChild(path);
-  }
-}
+function drawCurves() {}
 
 // ── Input logic ──
 inputBar.addEventListener('click', () => {
