@@ -175,22 +175,22 @@
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
-    width: 28px;
-    height: 28px;
-    background: var(--bg);
-    border: 1px solid var(--orange-border);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    color: var(--orange);
-    line-height: 1;
+    width: 32px;
+    height: 32px;
     pointer-events: none;
-    font-family: 'Bebas Neue', sans-serif;
     z-index: 2;
+    background: none;
+    border: none;
+    font-size: 0;
+    color: transparent;
   }
-  .msg-row.left .asterisk  { right: -38px; }
-  .msg-row.right .asterisk { left: -38px; }
+  .asterisk img {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+  }
+  .msg-row.left .asterisk  { right: -44px; }
+  .msg-row.right .asterisk { left: -44px; }
 
   /* User avatar on left messages - right side */
   .user-avatar {
@@ -470,7 +470,7 @@ function addMsg(text, side, typing = false) {
   if (side === 'left') {
     const ast = document.createElement('span');
     ast.className = 'asterisk';
-    ast.textContent = '*';
+    ast.innerHTML = '<img src="https://raw.githubusercontent.com/borisalek/chat-widget/refs/heads/main/user.png" alt="">';
     bubble.appendChild(ast);
   }
 
@@ -482,59 +482,77 @@ function addMsg(text, side, typing = false) {
   return { row, bubble };
 }
 
-// ── Draw curves using Vector4.png ──
-const CURVE_IMG = 'https://raw.githubusercontent.com/borisalek/chat-widget/refs/heads/main/Vector%204.png';
+// ── Draw curves: from widget edge to next row's avatar ──
+const CURVE_IMG_URL = 'https://raw.githubusercontent.com/borisalek/chat-widget/refs/heads/main/Vector%204.png';
 
 function drawCurves() {
-  const rows = Array.from(timeline.querySelectorAll('.msg-row'));
-  svg.innerHTML = '';
-  const tlRect = timeline.getBoundingClientRect();
-
   // Remove old curve imgs
   timeline.querySelectorAll('.curve-img').forEach(el => el.remove());
 
-  for (let i = 0; i < rows.length - 1; i++) {
-    const from     = rows[i];
-    const to       = rows[i + 1];
-    const fromBubble = from.querySelector('.bubble');
-    const toBubble   = to.querySelector('.bubble');
-    if (!fromBubble || !toBubble) continue;
+  const rows = Array.from(timeline.querySelectorAll('.msg-row'));
+  const tlRect = timeline.getBoundingClientRect();
+  const containerWidth = tlRect.width;
 
-    const fromRect = fromBubble.getBoundingClientRect();
-    const toRect   = toBubble.getBoundingClientRect();
+  for (let i = 0; i < rows.length - 1; i++) {
+    const from   = rows[i];
+    const to     = rows[i + 1];
     const fromSide = from.dataset.side;
     const toSide   = to.dataset.side;
 
+    const fromBubble = from.querySelector('.bubble');
+    const toAvatar   = to.querySelector('.avatar') || to.querySelector('.bubble');
+    if (!fromBubble || !toAvatar) continue;
+
+    const fromRect   = fromBubble.getBoundingClientRect();
+    const toRect     = toAvatar.getBoundingClientRect();
+
+    // Curve starts from right edge of widget (for left bubbles) or left edge (for right bubbles)
+    // and ends at the avatar of the next message
     const img = document.createElement('img');
     img.className = 'curve-img';
-    img.src = CURVE_IMG;
+    img.src = CURVE_IMG_URL;
 
-    // Start: right edge of left bubble OR left edge of right bubble
-    // End: opposite bubble
-    const startX = fromSide === 'left'
-      ? fromRect.right - tlRect.left
-      : fromRect.left - tlRect.left;
-    const startY = fromRect.bottom - tlRect.top;
-    const endX   = toSide === 'left'
-      ? toRect.left - tlRect.left
-      : toRect.right - tlRect.left;
-    const endY   = toRect.top - tlRect.top;
-
-    const width  = Math.abs(endX - startX);
-    const height = Math.abs(endY - startY);
-
-    img.style.cssText = `
-      position: absolute;
-      left: ${Math.min(startX, endX)}px;
-      top: ${startY}px;
-      width: ${Math.max(width, 80)}px;
-      height: ${Math.max(height, 40)}px;
-      opacity: 0.6;
-      pointer-events: none;
-      z-index: 0;
-      object-fit: fill;
-      ${fromSide === 'right' ? 'transform: scaleX(-1);' : ''}
-    `;
+    // From side determines which edge of widget the curve starts from
+    if (fromSide === 'left') {
+      // curve goes from right wall to next avatar (which is on left for right msgs)
+      const startX = containerWidth; // right edge
+      const startY = fromRect.bottom - tlRect.top;
+      const endX   = toRect.left - tlRect.left;
+      const endY   = toRect.top - tlRect.top + toRect.height / 2;
+      const w = startX - endX;
+      const h = endY - startY;
+      img.style.cssText = `
+        position: absolute;
+        right: 0;
+        top: ${startY}px;
+        width: ${Math.max(w, 100)}px;
+        height: ${Math.max(h, 40)}px;
+        opacity: 0.7;
+        pointer-events: none;
+        z-index: 0;
+        object-fit: fill;
+        transform: scaleX(-1);
+      `;
+    } else {
+      // right bubble -> curve goes from left wall to next avatar
+      const startX = 0;
+      const startY = fromRect.bottom - tlRect.top;
+      const endX   = toRect.right - tlRect.left;
+      const endY   = toRect.top - tlRect.top + toRect.height / 2;
+      const w = endX - startX;
+      const h = endY - startY;
+      img.style.cssText = `
+        position: absolute;
+        left: 0;
+        top: ${startY}px;
+        width: ${Math.max(w, 100)}px;
+        height: ${Math.max(h, 40)}px;
+        opacity: 0.7;
+        pointer-events: none;
+        z-index: 0;
+        object-fit: fill;
+      `;
+    }
 
     timeline.appendChild(img);
   }
