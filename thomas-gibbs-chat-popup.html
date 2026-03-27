@@ -130,6 +130,16 @@
     border: 1px solid rgba(255,255,255,0.10);
     box-shadow: inset -2px -90px 98px 0px rgba(255,76,0,0.54);
   }
+  .msg-row.left .bubble::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 40px;
+    background: #FF4C00;
+  }
   .msg-row.right .bubble {
     background: var(--bg-bubble-right);
     border-right: 3px solid var(--orange);
@@ -199,7 +209,7 @@
     position: relative;
   }
   .msg-row.right .avatar {
-    left: 8px;
+    left: 0px;
     right: auto;
   }
 
@@ -251,8 +261,8 @@
   }
 
   .input-bar {
-    border-top: 1px solid rgba(201,79,12,0.4);
-    background: rgba(201,79,12,0.06);
+    border: 1px solid rgba(255,76,0,0.5);
+    background: linear-gradient(90deg, #3B1C07 0%, #FF6900 100%);
     display: flex;
     align-items: center;
     padding: 0 0 0 24px;
@@ -261,17 +271,17 @@
     position: relative;
     z-index: 1;
     transition: background 0.3s;
+    box-shadow: 0 0 40px rgba(255,76,0,0.3), 0 0 80px rgba(255,105,0,0.15);
   }
   .input-bar.active {
-    background: rgba(201,79,12,0.1);
-    box-shadow: inset 0 1px 0 rgba(201,79,12,0.3);
+    box-shadow: 0 0 60px rgba(255,76,0,0.5), 0 0 100px rgba(255,105,0,0.25);
   }
 
   .placeholder-text {
     font-family: 'Bebas Neue', sans-serif;
     font-size: 18px;
     letter-spacing: 0.16em;
-    color: rgba(201,79,12,0.6);
+    color: #FFBFA4;
     flex: 1;
     pointer-events: none;
     user-select: none;
@@ -285,7 +295,7 @@
     resize: none;
     font-family: 'DM Sans', sans-serif;
     font-size: 14px;
-    color: var(--text);
+    color: #FFBFA4;
     max-height: 100px;
     line-height: 1.5;
     display: none;
@@ -306,10 +316,14 @@
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    transition: background 0.2s;
+    transition: background 0.2s, box-shadow 0.2s;
     position: relative;
+    box-shadow: 0 0 20px rgba(255,76,0,0.6), 0 0 40px rgba(255,105,0,0.3), inset 0 0 20px rgba(255,76,0,0.1);
   }
-  .send-btn:hover { background: var(--orange); }
+  .send-btn:hover {
+    background: var(--orange);
+    box-shadow: 0 0 30px rgba(255,76,0,0.9), 0 0 60px rgba(255,105,0,0.5);
+  }
   .send-btn:disabled { opacity: 0.35; cursor: not-allowed; }
   .send-btn:disabled:hover { background: #1a1a1a; }
 
