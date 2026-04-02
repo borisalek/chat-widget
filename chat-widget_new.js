@@ -61,7 +61,7 @@
   transform: translateX(-50%) translateY(10px);
   width: 420px;
   max-width: calc(100vw - 32px);
-  height: 500px;
+  max-height: calc(100vh - 140px);
   background: #fff;
   border-radius: 24px;
   box-shadow: 0 8px 48px rgba(0,0,0,0.13);
@@ -124,12 +124,7 @@
   color: #fff;
   border-top-right-radius: 4px;
 }
-.zc-bubble.bot a {
-  color: var(--zc-primary);
-  font-weight: 600;
-  text-decoration: none;
-}
-.zc-bubble.bot a:hover { text-decoration: underline; }
+.zc-bubble.typing { color: #aaa; font-style: italic; }
 
 .zc-sender {
   font-size: 11px;
@@ -207,6 +202,58 @@
 }
 .zc-powered span { color: #999; }
 
+
+/* ── Email gate overlay ── */
+.zc-email-overlay {
+  position: absolute;
+  inset: 0;
+  background: #fff;
+  border-radius: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 28px;
+  gap: 16px;
+  z-index: 10;
+}
+.zc-email-overlay.hidden { display: none; }
+.zc-email-logo {
+  width: 48px; height: 48px; border-radius: 14px;
+  background: var(--zc-primary);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; color: #fff; font-weight: 700;
+  overflow: hidden; flex-shrink: 0;
+}
+.zc-email-logo img { width: 100%; height: 100%; object-fit: cover; }
+.zc-email-title {
+  font-size: 17px; font-weight: 700; color: #1a1a1a;
+  text-align: center; line-height: 1.3;
+}
+.zc-email-sub {
+  font-size: 13px; color: #888; text-align: center; line-height: 1.5;
+}
+.zc-email-input {
+  width: 100%; padding: 12px 14px; border-radius: 12px;
+  border: 1.5px solid #e8e8e8; font-size: 14px; font-family: inherit;
+  outline: none; transition: border-color 0.2s; color: #333;
+}
+.zc-email-input:focus { border-color: var(--zc-primary); }
+.zc-email-btn {
+  width: 100%; padding: 13px; border-radius: 12px;
+  background: var(--zc-primary); border: none;
+  font-size: 14px; font-weight: 600; color: #fff;
+  cursor: pointer; transition: opacity 0.2s;
+}
+.zc-email-btn:hover { opacity: 0.88; }
+.zc-email-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.zc-email-skip {
+  font-size: 12px; color: #bbb; cursor: pointer;
+  text-decoration: underline; background: none; border: none;
+  font-family: inherit;
+}
+.zc-email-skip:hover { color: #888; }
+
 /* ── Close circle ── */
 .zc-close-btn {
   position: fixed;
@@ -256,6 +303,15 @@
 
     <!-- Chat panel -->
     <div class="zc-panel">
+      <!-- Email gate -->
+      <div class="zc-email-overlay" id="zcEmailOverlay">
+        <div class="zc-email-logo">${logoUrl() ? `<img src="${logoUrl()}" alt="">` : brandName().charAt(0).toUpperCase()}</div>
+        <div class="zc-email-title">Before we start...</div>
+        <div class="zc-email-sub">Enter your email to continue the conversation and get updates.</div>
+        <input class="zc-email-input" type="email" placeholder="your@email.com" id="zcEmailInput">
+        <button class="zc-email-btn" id="zcEmailBtn">Start chatting →</button>
+        <button class="zc-email-skip" id="zcEmailSkip">Skip for now</button>
+      </div>
       <div class="zc-msgs"></div>
       <div class="zc-quick"></div>
       <div class="zc-divider"></div>
@@ -287,51 +343,46 @@
   let sessionId   = '';
   let isOpen      = false;
   let started     = false;
+  let userEmail   = localStorage.getItem('zc_email') || '';
 
-  /* ─── Persistence helpers ────────────────────────────────────── */
-  const STORAGE_KEY = 'zc_chat_history';
-  const SESSION_KEY = 'zc_chat_session';
+  /* ─── Email overlay refs ─────────────────────────────────────── */
+  const emailOverlay = root.querySelector('#zcEmailOverlay');
+  const emailInput   = root.querySelector('#zcEmailInput');
+  const emailBtn     = root.querySelector('#zcEmailBtn');
+  const emailSkip    = root.querySelector('#zcEmailSkip');
 
-  const EXPIRY_MS = 5 * 60 * 1000; // 5 minuta
+  // Hide overlay if email already collected
+  if (userEmail) emailOverlay.classList.add('hidden');
 
-  function saveHistory() {
-    const msgs = [];
-    msgsArea.querySelectorAll('.zc-row, .zc-sender').forEach(el => {
-      msgs.push({ html: el.outerHTML, cls: el.className });
-    });
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ msgs, ts: Date.now() }));
-    localStorage.setItem(SESSION_KEY, sessionId);
+  function submitEmail() {
+    const email = emailInput.value.trim();
+    if (!email || !email.includes('@')) {
+      emailInput.style.borderColor = '#ff4444';
+      return;
+    }
+    userEmail = email;
+    localStorage.setItem('zc_email', email);
+    emailOverlay.classList.add('hidden');
+    // Send to n8n webhook
+    const url = cfg().webhook?.url;
+    if (url) {
+      fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email, sessionId: sessionId, route: 'email_capture' })
+      }).catch(() => {});
+    }
+    if (!started) { started = true; initConversation(); }
+    textarea.focus();
   }
 
-  function loadHistory() {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    const savedSession = localStorage.getItem(SESSION_KEY);
-    if (!saved || !savedSession) return false;
-    try {
-      const parsed = JSON.parse(saved);
-      const age = Date.now() - (parsed.ts || 0);
-      if (age > EXPIRY_MS) {
-        clearHistory();
-        return false;
-      }
-      const msgs = parsed.msgs;
-      if (!msgs || !msgs.length) return false;
-      sessionId = savedSession;
-      msgsArea.innerHTML = '';
-      msgs.forEach(m => {
-        const tmp = document.createElement('div');
-        tmp.innerHTML = m.html;
-        msgsArea.appendChild(tmp.firstChild);
-      });
-      scroll();
-      return true;
-    } catch { return false; }
-  }
-
-  function clearHistory() {
-    localStorage.removeItem(STORAGE_KEY);
-    localStorage.removeItem(SESSION_KEY);
-  }
+  emailBtn.addEventListener('click', submitEmail);
+  emailInput.addEventListener('keydown', e => { if (e.key === 'Enter') submitEmail(); });
+  emailSkip.addEventListener('click', () => {
+    emailOverlay.classList.add('hidden');
+    if (!started) { started = true; initConversation(); }
+    textarea.focus();
+  });
 
   /* ─── Open / Close ───────────────────────────────────────────── */
   function openPanel() {
@@ -339,6 +390,12 @@
     panel.classList.add('open');
     toggleBar.style.display = 'none';
     closeBtn.classList.add('visible');
+    if (!userEmail) {
+      // Show email overlay, init session ID
+      if (!sessionId) sessionId = crypto.randomUUID();
+      emailInput.focus();
+      return;
+    }
     if (!started) { started = true; initConversation(); }
     textarea.focus();
   }
@@ -385,8 +442,7 @@
     msgsArea.appendChild(sender);
 
     scroll();
-    saveHistory();
-    return { bubble, row };
+    return bubble;
   }
 
   /* ─── Add user message ───────────────────────────────────────── */
@@ -398,58 +454,63 @@
     bubble.textContent = text;
     row.appendChild(bubble);
     msgsArea.appendChild(row);
-    scroll(row);
-    saveHistory();
+    scroll();
   }
 
-  function scroll(toEl) {
-    if (toEl) {
-      setTimeout(() => {
-        toEl.scrollIntoView({ block: 'start', behavior: 'smooth' });
-      }, 50);
-    } else {
-      msgsArea.scrollTop = msgsArea.scrollHeight;
-    }
+  function scroll() {
+    msgsArea.scrollTop = msgsArea.scrollHeight;
   }
 
   /* ─── Init conversation ──────────────────────────────────────── */
   function initConversation() {
+    if (!sessionId) sessionId = crypto.randomUUID();
     msgsArea.innerHTML = '';
     quickArea.innerHTML = '';
 
-    // Try to restore previous session
-    if (loadHistory()) return;
-
-    // Fresh start
-    sessionId = crypto.randomUUID();
     addBotMsg(welcome());
 
-    const questions = cfg().branding?.quickQuestions || [];
+    const questions = [
+      {
+        text: "What services do you offer?",
+        reply: `Here's what we offer:<br><br>🔄 <b>Workflow Automation</b> – Automate repetitive tasks using n8n, Make & Zapier<br>🤖 <b>Custom AI Agents</b> – Intelligent bots tailored to your business<br>🔗 <b>System Integrations</b> – Connect your tools & platforms seamlessly<br>🌐 <b>No-Code Development</b> – Build apps & dashboards without writing code<br><br><a href="https://borisaleksicwebdesigner.framer.website/#services1" style="display:inline-block;margin-top:6px;padding:10px 18px;border-radius:999px;border:1.5px solid #e0e0e0;background:#fff;color:#333;font-weight:600;font-size:13px;text-decoration:none;" onmouseover="this.style.borderColor='var(--zc-primary)'" onmouseout="this.style.borderColor='#e0e0e0'">🔗 View all services →</a>`
+      },
+      {
+        text: "How much does it cost?",
+        reply: "Our packages start from $500. The final price depends on the complexity of your project."
+      },
+      {
+        text: "Build custom AI agents?",
+        reply: "Yes! We specialize in building custom AI agents using tools like n8n, Make, and OpenAI."
+      },
+      {
+        text: "Book a consultation",
+        reply: "Great! You can book a free consultation at <a href='https://nocodecreative.io/contact' style='color:var(--zc-primary);font-weight:600;text-decoration:none;'>nocodecreative.io/contact</a>. We'd love to hear about your project."
+      }
+    ];
 
     questions.forEach(q => {
       const btn = document.createElement('button');
       btn.className = 'zc-qbtn';
-      btn.textContent = q.text;
+      btn.innerHTML = q.emoji ? q.emoji + " " + q.text : q.text;
       btn.onclick = () => {
         quickArea.innerHTML = '';
-        sendMessage(q.text, null, q.cta || null);
+        sendMessage(q.text, q.reply);
       };
       quickArea.appendChild(btn);
     });
   }
 
   /* ─── Send message ───────────────────────────────────────────── */
-  async function sendMessage(text, hardReply, cta) {
+  async function sendMessage(text, hardReply) {
     quickArea.innerHTML = '';
     addUserMsg(text);
 
     if (hardReply) {
-      const { row: hardRow } = addBotMsg(hardReply);
-      scroll(hardRow);
+      addBotMsg(hardReply);
       return;
     }
 
-    const { bubble, row: botRow } = addBotMsg('...', true);
+    const bubble = addBotMsg('...', true);
 
     sendBtn.disabled = true;
     textarea.disabled = true;
@@ -464,55 +525,35 @@
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
-        body: JSON.stringify({ chatInput: text, sessionId: sessionId, route: route })
+        body: JSON.stringify({ chatInput: text, sessionId: sessionId, route: route, email: userEmail })
       });
 
       const data = await res.json();
       bubble.classList.remove('typing');
-      bubble.innerHTML = (data.output || "Sorry, I couldn't process your request.").replace(/\n/g, '<br>');
-      saveHistory();
-      scroll(botRow);
+      bubble.textContent = data.output || "Sorry, I couldn't process your request.";
 
-      // Determine which CTA to show
-      let ctaToShow = cta || null;
-
-      if (!ctaToShow) {
-        const q = text.toLowerCase();
-        const questions = cfg().branding?.quickQuestions || [];
-        const serviceKeywords = [
-          'service', 'services', 'offer', 'what do you do',
-          'b2b', 'marketing', 'location', 'global', 'seo',
-          'website', 'digital', 'campaign', 'strategy', 'automation',
-          'agent', 'integration', 'no-code', 'nocode', 'usluga', 'usluge'
-        ];
-        const isServiceQ = serviceKeywords.some(kw => q.includes(kw));
-        if (isServiceQ) {
-          const serviceQ = questions.find(q => q.text.toLowerCase().includes('service'));
-          if (serviceQ) ctaToShow = serviceQ.cta;
-        }
-      }
-
-      if (ctaToShow) {
-        const ctaEl = document.createElement('a');
-        ctaEl.href = ctaToShow.url;
-        ctaEl.target = '_blank';
-        ctaEl.rel = 'noopener noreferrer';
-        ctaEl.className = 'zc-qbtn';
-        ctaEl.style.cssText = 'text-decoration:none;margin-top:-8px;';
-        ctaEl.innerHTML = ctaToShow.label;
-        msgsArea.appendChild(ctaEl);
-        saveHistory();
+      // Ako je pitanje o uslugama, dodaj CTA ispod odgovora
+      const serviceKeywords = ['service', 'services', 'offer', 'what do you do', 'usluga', 'usluge'];
+      const isServiceQ = serviceKeywords.some(kw => text.toLowerCase().includes(kw));
+      if (isServiceQ) {
+        const cta = document.createElement('a');
+        cta.href = 'https://borisaleksicwebdesigner.framer.website/#services1';
+        cta.className = 'zc-qbtn';
+        cta.style.cssText = 'text-decoration:none;margin-top:-8px;';
+        cta.innerHTML = '🔗 View all services →';
+        msgsArea.appendChild(cta);
         scroll();
       }
 
     } catch {
       bubble.classList.remove('typing');
-      bubble.innerHTML = "Connection error. Please try again.";
+      bubble.textContent = "Connection error. Please try again.";
     }
 
     sendBtn.disabled = false;
     textarea.disabled = false;
     textarea.focus();
+    scroll();
   }
 
   /* ─── Input events ───────────────────────────────────────────── */
